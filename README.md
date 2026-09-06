@@ -56,3 +56,12 @@ Ce README évolue avec le projet. Chaque étape du plan ajoute ici les commandes
 
 - Étape 0 : Docker Engine installé dans WSL2 avec systemd, sans Docker Desktop.
 - Étape 0 bis : devcontainer basé sur le compose de dev.
+- Étape 1 : moteurs de jeu purs (`backend/app/games`), IA aléatoire et IA parfaite, 100 tests. Sans Python sur l'hôte, la suite tourne dans un conteneur jetable :
+  ```bash
+  cd backend
+  docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e UV_CACHE_DIR=/tmp/uv-cache \
+    -v "$PWD":/app -w /app ghcr.io/astral-sh/uv:python3.12-bookworm-slim \
+    sh -c "uv sync && uv run ruff check . && uv run mypy && uv run pytest"
+  ```
+  Piège : sans `--user`, les fichiers créés par le conteneur (`.venv`, `uv.lock`) appartiennent à root sur l'hôte.
+- CI : `.github/workflows/ci.yml` rejoue ruff, mypy et pytest à chaque push et PR, actions épinglées par SHA.
