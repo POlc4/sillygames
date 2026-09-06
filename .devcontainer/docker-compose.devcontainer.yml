@@ -1,0 +1,15 @@
+# Surcouche du docker-compose.yml de dev : ajoute le conteneur d'outillage.
+# Le dépôt vit dans le système de fichiers WSL2 (ext4), le bind mount est donc à vitesse native.
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    command: sleep infinity
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-sillygames}:${POSTGRES_PASSWORD:-sillygames}@postgres:5432/${POSTGRES_DB:-sillygames}
+    depends_on:
+      postgres:
+        condition: service_healthy
