@@ -86,6 +86,8 @@ sillygames/
 
 - **players** : `id uuid`, `username unique null`, `password_hash null`, `is_guest bool`, `created_at`.
   Un invité est une ligne `is_guest=true`. L'inscription **convertit** la ligne invité courante (renseigne username/password, `is_guest=false`) : l'historique est conservé sans migration de données.
+- **identities** (étape 2 bis) : `id`, `player_id`, `provider` (`google` | `microsoft` | `github` | `facebook`), `provider_subject` (identifiant stable chez le fournisseur), `email null`, `display_name null`, `created_at`, unique sur `(provider, provider_subject)`.
+  Une connexion externe est une façon de plus de convertir l'invité courant, ou de retrouver le joueur lié. Un joueur peut avoir plusieurs identités et éventuellement aussi un mot de passe.
 - **games** : `id`, `player_id`, `game_type` (`rps` | `sticks`), `ai_strategy` (`random` | `ml`), `config json` (ex. `{"sticks": 21}`), `status` (`in_progress` | `finished`), `result` (`win` | `loss` | `draw` | null), `started_at`, `finished_at`.
 - **moves** : `id`, `game_id`, `turn`, `state_before json`, `player_move`, `ai_move`, `state_after json`, `created_at`.
   RPS : un move par manche (partie en 5 manches, `result` = vainqueur global). Bâtonnets : un move = un tour joueur + réponse IA.
@@ -94,6 +96,7 @@ sillygames/
 ### API (préfixe `/api`)
 
 - `POST /auth/guest` → crée un invité, pose le cookie JWT. `POST /auth/register` (convertit l'invité courant ou crée), `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`.
+- `GET /auth/oauth/{provider}/start` → redirection vers le fournisseur (state + PKCE en cookie signé). `GET /auth/oauth/{provider}/callback` → vérifie, crée ou retrouve l'identité, lie au joueur courant ou connecte le joueur lié, pose le cookie JWT, redirige vers le front. `GET /auth/identities`, `DELETE /auth/identities/{id}` (refusé s'il ne reste ni mot de passe ni autre identité).
 - `POST /games` `{game_type, config}` → id + état initial. `POST /games/{id}/moves` `{move}` → coup IA, nouvel état, résultat éventuel. `GET /games/{id}`.
 - `GET /stats/me`, `GET /stats/global` (taux de victoire par jeu et par stratégie IA), `GET /stats/leaderboard`.
 - `GET /health` (utilisé par le healthcheck Docker et Caddy).
@@ -152,6 +155,24 @@ Premier contact concret avec les conteneurs, et il sert dès l'étape 1.
 - SQLAlchemy 2 + Alembic, migration initiale des 3 tables.
 - Auth : argon2 (`pwdlib`), JWT (`PyJWT`) dans cookie `httpOnly; SameSite=Lax; Secure` en prod. Une seule dépendance `current_player` sert invités et inscrits.
 - Tests API avec `httpx.AsyncClient` contre un Postgres de test (service container en CI, compose en local).
+
+### Étape 2 bis — Identités externes (OAuth 2 / OpenID Connect)
+Objectif d'apprentissage : comprendre le flux Authorization Code + PKCE, la notion d'identité liée à un compte, et l'enregistrement d'une application chez chaque fournisseur. Tout est gratuit.
+
+**Fournisseurs, dans l'ordre de mise en place**
+1. **GitHub** : enregistrement en deux minutes, `http://localhost` accepté en dev, aucune validation. Sert à valider toute la mécanique.
+2. **Google** : projet Google Cloud (sans carte), écran de consentement en mode « test » avec ta liste d'utilisateurs, puis publication pour ouvrir à tous (pas de vérification tant qu'on ne demande que `openid email profile`). OpenID Connect complet.
+3. **Microsoft** : app registration Entra ID gratuite, type « comptes personnels et professionnels ». OpenID Connect via `login.microsoftonline.com/common`.
+4. **Facebook** : app Meta for Developers gratuite, mais l'app reste en « mode développement » (seuls les testeurs déclarés peuvent se connecter) tant qu'elle n'a pas passé la revue Meta, qui exige une URL de politique de confidentialité et parfois une vérification d'entreprise. À garder en dernier, en acceptant qu'il reste peut-être limité aux testeurs.
+
+**Implémentation backend**
+- Bibliothèque **Authlib** (client OAuth/OIDC pour Starlette/FastAPI), configuration par fournisseur dans `app/auth/providers.py` (URL de découverte OIDC pour Google et Microsoft, endpoints explicites pour GitHub et Facebook). Secrets `OAUTH_<PROVIDER>_CLIENT_ID` / `_CLIENT_SECRET` en variables d'environnement, fournisseur désactivé si absents.
+- Flux : `state` anti-CSRF et PKCE obligatoires, `nonce` pour OIDC, vérification de la signature de l'`id_token` avec les JWKS du fournisseur. Cookie temporaire signé pour porter `state`/`code_verifier` entre le départ et le retour.
+- Règle de liaison : si le visiteur est un invité, l'identité est attachée à son joueur (conversion, historique conservé, comme l'inscription par mot de passe). Si l'identité existe déjà pour un autre joueur, on connecte ce joueur. Un e-mail identique chez deux fournisseurs ne fusionne **pas** automatiquement les comptes (les e-mails ne sont pas tous vérifiés, Facebook peut ne pas en fournir) : la fusion se fait explicitement depuis le compte connecté via « lier un fournisseur ».
+- Page compte côté front : liste des identités liées, boutons « lier » / « délier », impossibilité de délier la dernière méthode de connexion.
+- URLs de retour : `http://localhost:3000/api/auth/oauth/<provider>/callback` en dev, `https://<domaine>/api/auth/oauth/<provider>/callback` en prod, à déclarer chez chaque fournisseur. Le runbook liste les quatre consoles.
+- Tests : le fournisseur est simulé (serveur OIDC factice avec `respx` ou un `httpx.MockTransport`) pour tester callback, liaison, connexion existante, `state` invalide, `id_token` mal signé. Aucun appel réseau réel en CI.
+- ADR 0005 à écrire : identités externes multiples par joueur, pas de fusion automatique par e-mail.
 
 ### Étape 3 — Routes jeux et stats
 - Création de partie, jeu tour par tour, clôture avec `result`, stats agrégées en SQL.
@@ -235,6 +256,30 @@ Objectif : que les règles du projet soient écrites une fois, lues par les huma
 - **Pipeline** : workflow `train.yml` planifié qui récupère un export (endpoint admin protégé par token ou `pg_dump` récupéré en SSH), entraîne, publie le modèle en artefact/release, puis redéploie.
 
 ---
+
+## Phase 3 — PWA (Progressive Web App)
+
+Objectif d'apprentissage : manifest, service worker, stratégies de cache, mode hors ligne, installation sur mobile et bureau, audit Lighthouse. Se fait après la mise en ligne, car un service worker exige HTTPS et se teste réellement en prod.
+
+**Palier 1 : installable**
+- `app/manifest.ts` dans Next.js (nom, couleurs, `display: standalone`, `start_url`, icônes 192/512 px maskable générées depuis un SVG). Balises `theme-color` et `apple-touch-icon`.
+- Service worker avec **Serwist** (successeur maintenu de next-pwa, gratuit) : précache de l'app shell (pages, JS, CSS, icônes), stratégie `NetworkFirst` sur `/api/*`, `StaleWhileRevalidate` sur les assets.
+- Page hors ligne dédiée servie par le service worker quand le réseau manque.
+- Vérification : bannière « Installer » sur Chrome bureau et Android, application ouverte en fenêtre autonome, audit **Lighthouse CI** ajouté au workflow (score PWA et performance publiés en commentaire de PR, seuil bloquant sur les régressions).
+
+**Palier 2 : jouer hors ligne**
+- Les moteurs de jeu sont côté serveur ; pour jouer sans réseau, portage des deux moteurs et de l'IA `random`/`perfect` en TypeScript dans `frontend/lib/engines/`, avec les mêmes tests que le backend (vitest) pour garantir des règles identiques.
+- Parties hors ligne stockées en IndexedDB, puis synchronisées : `POST /api/games/import` accepte une partie complète (coups + résultat) et la rejoue côté serveur pour la valider avant de l'enregistrer. Le serveur reste la source de vérité pour les stats et le ML.
+- Indicateur d'état réseau et file d'attente de synchronisation visibles dans l'interface. Background Sync là où le navigateur le supporte, repli sur synchronisation à l'ouverture.
+
+**Palier 3 : notifications push (optionnel)**
+- Clés VAPID générées une fois (gratuit), abonnements stockés en base, envoi par le backend avec `pywebpush`. Cas d'usage : « ton adversaire IA s'est amélioré » après un entraînement ML, ou rappel hebdomadaire. À n'activer qu'avec opt-in explicite.
+
+**Points d'attention PWA**
+- La 3D et le service worker cohabitent bien, mais le bundle Three.js doit être dans le précache pour que les pages de jeu fonctionnent hors ligne.
+- Un service worker mal versionné sert une vieille version : stratégie de mise à jour explicite (bouton « Nouvelle version disponible ») et test de mise à jour dans le runbook.
+- Le cookie JWT est envoyé automatiquement par le navigateur, y compris depuis l'app installée ; rien à changer côté auth. Pour la connexion OAuth depuis l'app installée, la redirection revient dans la fenêtre autonome : à tester sur Android et iOS.
+- iOS : installation via « Ajouter à l'écran d'accueil » uniquement, pas de bannière, Background Sync et push limités. À documenter plutôt qu'à contourner.
 
 ## Points d'attention
 
