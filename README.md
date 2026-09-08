@@ -65,3 +65,7 @@ Ce README évolue avec le projet. Chaque étape du plan ajoute ici les commandes
   ```
   Piège : sans `--user`, les fichiers créés par le conteneur (`.venv`, `uv.lock`) appartiennent à root sur l'hôte.
 - CI : `.github/workflows/ci.yml` rejoue ruff, mypy et pytest à chaque push et PR, actions épinglées par SHA.
+- Étape 2 : persistance et authentification. Tables `players`, `games`, `moves` (SQLAlchemy 2, migration Alembic `0001`), session en cookie JWT httpOnly, invité créé à la première visite et converti en compte à l'inscription sans changer d'identifiant. Les tests d'intégration migrent une base `sillygames_test` avec Alembic et la vident après chaque test. La commande unique pour tout vérifier (lint, types, migrations, tests) est `./scripts/backend-check.sh`, qui exige `docker compose up -d postgres`.
+  - Piège : un dossier `alembic/` dans le projet fait classer la bibliothèque `alembic` comme code local par le tri d'imports de ruff. Réglé par `known-third-party` dans `pyproject.toml`.
+  - Piège : PyJWT refuse à terme les secrets HS256 de moins de 32 octets. Générer le vrai secret avec `openssl rand -hex 32`.
+  - En CI, Postgres tourne comme *service container* du job ; la migration est appliquée, comparée aux modèles (`alembic check`) puis annulée avant les tests.

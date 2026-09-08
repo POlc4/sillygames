@@ -15,7 +15,11 @@ Projet d'apprentissage du déploiement conteneurisé. Le plan complet est dans `
 - **Commits** : Conventional Commits en anglais (`feat:`, `fix:`, `docs:`, `ci:`, `chore:`, `refactor:`, `test:`). Scope optionnel : `feat(backend): ...`. Le CHANGELOG est généré par release-please, jamais édité à la main.
 - **Langue** : code, commits, noms de fichiers en anglais. Documentation, ADR, README, commentaires d'explication en français.
 - **Branches** : `main` protégée, une PR par intention, squash merge. Une PR ouverte par Claude passe la même CI et la même revue que les autres, jamais de merge automatique.
-- **Tests** : tout moteur de jeu et toute stratégie d'IA ont des tests unitaires purs (sans DB). Toute route API a au moins un test d'intégration. Seuil de couverture backend : 80 %.
+- **Tests, règle générale** : aucun comportement n'est livré sans test, dans tout le projet. Une PR qui ajoute ou modifie un comportement sans test correspondant est refusée. Trois niveaux, tous exécutés en CI :
+  - *Unitaires* : logique pure sans I/O (moteurs de jeu, stratégies d'IA, sécurité, hooks et utilitaires front). Backend `pytest`, frontend `vitest`.
+  - *Intégration* : chaque route API testée via `TestClient` contre un vrai Postgres migré par Alembic (`backend/tests/conftest.py`), jamais avec SQLite ni mocks de la base. Les appels réseau externes (OAuth, etc.) sont simulés. Côté front, composants testés avec Testing Library contre une API simulée (MSW).
+  - *Bout en bout* : parcours utilisateur complets avec Playwright sur la stack `docker compose` (à partir de l'étape 5), exécutés en CI avant tout déploiement.
+  - Seuils de couverture bloquants : backend 80 %, frontend 70 %. Les tests vérifient un comportement observable, pas une implémentation.
 - **Migrations** : une migration Alembic mergée n'est jamais modifiée, on en crée une nouvelle.
 - **Secrets** : jamais en dur ni commités. `.env` local, GitHub Secrets en CI, `.env` sur la VM. `gitleaks` tourne en pre-commit et en CI.
 - **Docker** : images de prod minimales, non-root, multi-stage. L'image du devcontainer contient l'outillage et ne sert jamais de base aux images de prod. Toute action GitHub est épinglée par SHA de commit.
