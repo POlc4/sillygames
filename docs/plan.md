@@ -281,6 +281,22 @@ Objectif d'apprentissage : manifest, service worker, stratégies de cache, mode 
 - Le cookie JWT est envoyé automatiquement par le navigateur, y compris depuis l'app installée ; rien à changer côté auth. Pour la connexion OAuth depuis l'app installée, la redirection revient dans la fenêtre autonome : à tester sur Android et iOS.
 - iOS : installation via « Ajouter à l'écran d'accueil » uniquement, pas de bannière, Background Sync et push limités. À documenter plutôt qu'à contourner.
 
+## Phase 4 (optionnelle) — Rust dans la stack
+
+À décider une fois la phase 1 en production. Rust n'apporte rien au cœur du projet (déploiement, ML en Python) mais offre deux exercices de conteneurisation et d'architecture qu'aucun autre composant ne couvre.
+
+**Palier 1 : un service compilé dans le compose**
+- Petit service Rust (Axum) à périmètre volontairement réduit, par exemple le calcul du classement et des agrégats de stats à partir de Postgres (`sqlx`), exposé sous `/api/stats/*` derrière Caddy et consommé par le backend ou le front.
+- Dockerfile multi-stage : compilation dans `rust:1-slim`, binaire statique (`musl`) copié dans une image `scratch` ou `gcr.io/distroless/static`. Objectif mesurable : image de quelques Mo, sans shell ni paquet, zéro finding Trivy, démarrage en millisecondes. Comparaison documentée avec les images Python et Node du projet.
+- Cache de compilation en CI (`Swatinem/rust-cache`), `cargo clippy` et `cargo test` dans `ci.yml`, tests d'intégration contre le service Postgres comme pour le backend.
+
+**Palier 2 : les moteurs de jeu en WebAssembly**
+- Crate `engines` avec les règles des bâtonnets et de pierre-feuille-ciseaux, plus les stratégies `random` et `perfect`, avec les mêmes tests que la version Python.
+- Compilation en WASM avec `wasm-pack` pour le frontend : remplace le portage TypeScript prévu au palier 2 de la phase 3, donc une seule implémentation des règles pour le jeu hors ligne au lieu de deux à maintenir en parallèle.
+- Mesures à documenter : taille du module, temps de chargement, différence de performance avec le TypeScript. Le backend Python reste la source de vérité pour valider les parties importées.
+
+**Critère de décision** : ne lancer cette phase que si les phases 1 à 3 sont stables et que l'envie d'apprendre Rust est réelle ; sinon, le portage TypeScript de la phase 3 suffit.
+
 ## Points d'attention
 
 ### Oracle Cloud Always Free : ce qui peut bloquer et comment s'en sortir
