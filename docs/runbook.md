@@ -26,7 +26,12 @@ Procédures d'exploitation. Mis à jour à chaque changement d'infra ou de CI.
 ./scripts/backend-check.sh     # ruff, mypy, alembic, pytest contre Postgres
 ./scripts/frontend-check.sh    # prettier, eslint, tsc, vitest + couverture, build
 ./scripts/e2e.sh               # stack compose + Playwright
+docker run --rm -v "$PWD":/repo -w /repo rhysd/actionlint:latest -no-color   # workflows GitHub
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest \
+  image --severity CRITICAL,HIGH --ignore-unfixed sillygames-frontend:local           # comme la CI
 ```
+
+Lire l'état de la CI sans se connecter : l'API publique de GitHub (60 requêtes par heure et par IP, ne pas boucler) donne les runs, les jobs et les annotations ; les logs complets exigent une authentification (`gh auth login` puis `gh run view --log`).
 
 ## Sécurité en CI
 
