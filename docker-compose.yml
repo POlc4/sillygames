@@ -6,7 +6,7 @@ name: sillygames
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: mirror.gcr.io/library/postgres:16-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-sillygames}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sillygames}

@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1.7
 # Image de production du backend : dépendances résolues avec uv, exécution non-root.
 
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
@@ -12,7 +11,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
 COPY . .
 
-FROM python:3.12-slim-bookworm AS runtime
+FROM mirror.gcr.io/library/python:3.12-slim-bookworm AS runtime
 ENV PYTHONUNBUFFERED=1 \
     PATH="/app/.venv/bin:$PATH"
 # UID/GID numériques : résolubles par l'hôte et par les politiques runAsNonRoot (hadolint DL3066).
