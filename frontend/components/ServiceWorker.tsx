@@ -3,7 +3,7 @@
 // Enregistre le service worker en production et propose de recharger quand une nouvelle
 // version est prête. Les mises à jour d'état ne se font que dans des callbacks d'événements.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function registerServiceWorker(
   onUpdate: () => void,
@@ -29,11 +29,17 @@ export function registerServiceWorker(
 
 export function ServiceWorker() {
   const [updateReady, setUpdateReady] = useState(false);
+  // Ne recharger que si l'utilisateur l'a demandé : la première prise de contrôle du service
+  // worker déclenche aussi controllerchange, et recharger à ce moment-là (parfois hors ligne)
+  // casse la page en cours.
+  const reloadRequested = useRef(false);
 
   useEffect(() => {
     if (process.env.NODE_ENV !== "production") return;
     void registerServiceWorker(() => setUpdateReady(true));
-    const reload = () => window.location.reload();
+    const reload = () => {
+      if (reloadRequested.current) window.location.reload();
+    };
     navigator.serviceWorker?.addEventListener("controllerchange", reload);
     return () => navigator.serviceWorker?.removeEventListener("controllerchange", reload);
   }, []);
@@ -49,8 +55,10 @@ export function ServiceWorker() {
       <button
         type="button"
         onClick={() => {
+          reloadRequested.current = true;
           void navigator.serviceWorker.getRegistration().then((registration) => {
-            registration?.waiting?.postMessage("SKIP_WAITING");
+            if (registration?.waiting) registration.waiting.postMessage("SKIP_WAITING");
+            else window.location.reload();
           });
         }}
         className="bg-accent text-accent-foreground rounded-md px-3 py-1 text-sm font-medium"

@@ -3,22 +3,19 @@
  *  - navigations (pages) : réseau d'abord, cache ensuite, page /offline en dernier recours ;
  *  - /_next/static et icônes : cache d'abord (fichiers hachés, immuables) ;
  *  - /api : réseau seulement, jamais mis en cache (données de session et de partie).
- * VERSION change à chaque déploiement (remplacée au build par next.config.ts si besoin) :
+ * Une nouvelle version attend (pas de skipWaiting automatique) jusqu'à ce que la page envoie
+ * SKIP_WAITING depuis la bannière « Nouvelle version disponible ».
+ * VERSION change à chaque déploiement qui touche les caches :
  * les anciens caches sont purgés à l'activation.
  */
-const VERSION = "v1";
+const VERSION = "v2";
 const SHELL_CACHE = `shell-${VERSION}`;
 const STATIC_CACHE = `static-${VERSION}`;
 const OFFLINE_URL = "/offline";
 const PRECACHE = ["/", OFFLINE_URL, "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches
-      .open(SHELL_CACHE)
-      .then((cache) => cache.addAll(PRECACHE))
-      .then(() => self.skipWaiting()),
-  );
+  event.waitUntil(caches.open(SHELL_CACHE).then((cache) => cache.addAll(PRECACHE)));
 });
 
 self.addEventListener("activate", (event) => {
