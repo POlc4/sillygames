@@ -2,8 +2,9 @@
 # Le dépôt vit dans le système de fichiers WSL2 (ext4), le bind mount est donc à vitesse native.
 services:
   dev:
+    # Chemins relatifs au dossier du PREMIER fichier compose (la racine du dépôt), pas à celui-ci.
     build:
-      context: .
+      context: .devcontainer
       dockerfile: Dockerfile
     volumes:
       - ..:/workspace:cached
