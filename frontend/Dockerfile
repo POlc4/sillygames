@@ -1,11 +1,11 @@
 # Image de production du frontend : build Next.js standalone, exécution non-root.
 
-FROM mirror.gcr.io/library/node:22-bookworm-slim AS deps
+FROM mirror.gcr.io/library/node:26-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
-FROM mirror.gcr.io/library/node:22-bookworm-slim AS build
+FROM mirror.gcr.io/library/node:26-bookworm-slim AS build
 WORKDIR /app
 # Destination du relais /api, figée au build par next.config.ts (nom du service compose).
 ARG API_URL=http://backend:8000
@@ -15,7 +15,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-FROM mirror.gcr.io/library/node:22-bookworm-slim AS runtime
+FROM mirror.gcr.io/library/node:26-bookworm-slim AS runtime
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
