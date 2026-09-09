@@ -28,7 +28,8 @@ RUN arch="$(dpkg --print-architecture)" \
     && curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${g}.tar.gz" \
         | tar -xz -C /usr/local/bin gitleaks
 
-USER vscode
+# 1000 = utilisateur vscode de l'image de base (UID numérique, hadolint DL3066).
+USER 1000:1000
 
 # uv : gestion de Python et des dépendances backend.
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
