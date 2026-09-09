@@ -74,3 +74,7 @@ Ce README évolue avec le projet. Chaque étape du plan ajoute ici les commandes
   - Piège : en mode souple, pydantic convertit le JSON `true` en entier 1 et `"2"` en 2. Les coups utilisent `StrictInt | StrictStr` pour refuser ces conversions. `Field(strict=True)` ne s'applique pas à une union.
   - Le générateur aléatoire est une dépendance FastAPI (`app/deps.py`) : les tests l'écrasent avec une graine fixe pour être rejouables.
   - Deux coups simultanés sur la même partie sont départagés par la contrainte unique `(game_id, turn)` : le second reçoit 409.
+- Étape 4 : frontend Next.js 16 (App Router, TypeScript, Tailwind 4). Pages accueil, bâtonnets, pierre-feuille-ciseaux, stats, connexion, inscription. Le client API appelle `/api` en relatif ; en dev `next.config.ts` relaie vers le backend, en prod c'est Caddy. Session : au chargement, `/api/auth/me` puis `/api/auth/guest` si 401. Tests vitest + Testing Library + MSW (27 tests, 90 % de couverture, seuil 70 %). Sans Node sur l'hôte : `./scripts/frontend-check.sh`.
+  - Piège : `create-next-app` installe `@types/node` 20 alors que vitest 5 exige la 22. Aligner sur la version de Node utilisée (22).
+  - Piège : la règle ESLint `react-hooks/set-state-in-effect` (React 19) refuse qu'un effet appelle une fonction qui modifie l'état. Le chargement de session est une fonction pure, l'effet applique son résultat dans le `then`.
+  - Le build utilise `output: "standalone"` pour produire une image Docker minimale à l'étape 5. Les polices Google ont été retirées : le build n'a plus besoin du réseau.

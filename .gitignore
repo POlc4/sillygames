@@ -19,6 +19,7 @@ node_modules/
 .next/
 out/
 *.tsbuildinfo
+coverage/
 npm-debug.log*
 
 # ML artefacts
