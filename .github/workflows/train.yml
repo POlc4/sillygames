@@ -1,0 +1,82 @@
+# Phase 2 : ré-entraîne le prior n-grammes à partir des parties de production, puis ouvre une PR
+# avec le modèle mis à jour (la CI et la revue s'appliquent comme pour tout changement).
+# Se saute proprement tant que la VM n'est pas configurée. Hebdomadaire ou à la demande.
+name: Train
+
+on:
+  schedule:
+    - cron: "45 4 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Check the VM secrets are configured
+        id: vm
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+        run: echo "present=$([ -n "$VM_HOST" ] && [ -n "$VM_SSH_KEY" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        if: steps.vm.outputs.present == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Export the games from the VM
+        if: steps.vm.outputs.present == 'true'
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_USER: ${{ secrets.VM_USER }}
+          VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+        run: |
+          umask 077
+          mkdir -p ~/.ssh data
+          printf '%s\n' "$VM_SSH_KEY" > ~/.ssh/id_vm
+          ssh-keyscan -H "$VM_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh -i ~/.ssh/id_vm "$VM_USER@$VM_HOST" \
+            'cd /opt/sillygames && docker compose exec -T backend python -m ml.export' > data/rps.jsonl
+          wc -l data/rps.jsonl
+
+      - name: Install uv
+        if: steps.vm.outputs.present == 'true'
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+
+      - name: Train
+        if: steps.vm.outputs.present == 'true'
+        run: |
+          uv sync --locked
+          uv run python -m ml.train_rps data/rps.jsonl | tee train.log
+          uv run python -m ml.train_sticks | tee -a train.log
+
+      - name: Open a pull request with the updated models
+        if: steps.vm.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd ..
+          if git diff --quiet -- backend/app/games/ai/models; then
+            echo "Modèles inchangés, pas de PR."
+            exit 0
+          fi
+          branch="train/$(date +%Y%m%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add backend/app/games/ai/models
+          git commit -m "feat(ml): retrain models from production games"
+          git push -u origin "$branch"
+          gh pr create --title "feat(ml): retrain models from production games" \
+            --body "$(printf 'Ré-entraînement automatique.\n\n```\n%s\n```\n' "$(cat backend/train.log)")"
+
+      - name: Skipped (no VM configured yet)
+        if: steps.vm.outputs.present != 'true'
+        run: echo "VM non configurée, entraînement sauté."

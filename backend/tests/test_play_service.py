@@ -43,7 +43,8 @@ def test_strategy_allowed_per_game() -> None:
     assert play.strategy_allowed("sticks", "perfect")
     assert play.strategy_allowed("rps", "random")
     assert not play.strategy_allowed("rps", "perfect")
-    assert not play.strategy_allowed("sticks", "ml")
+    assert play.strategy_allowed("sticks", "ml")
+    assert not play.strategy_allowed("sticks", "cheater")
     assert not play.strategy_allowed("chess", "random")
 
 

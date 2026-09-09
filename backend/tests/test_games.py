@@ -67,7 +67,7 @@ def test_random_first_is_resolved_in_config(client: TestClient) -> None:
     "body",
     [
         {"game_type": "chess"},
-        {"game_type": "sticks", "ai_strategy": "ml"},
+        {"game_type": "sticks", "ai_strategy": "cheater"},
         {"game_type": "rps", "ai_strategy": "perfect"},
         {"game_type": "sticks", "config": {"sticks": 4}},
         {"game_type": "sticks", "config": {"unknown": 1}},

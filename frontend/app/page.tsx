@@ -12,7 +12,8 @@ export default function HomePage() {
       <section>
         <h1 className="text-3xl font-bold">Deux petits jeux contre une IA</h1>
         <p className="text-muted mt-2">
-          Chaque partie est enregistrée. Bientôt, l&apos;IA apprendra de vos coups.
+          Chaque partie est enregistrée. L&apos;adversaire « Apprenante » s&apos;en sert contre
+          vous.
         </p>
       </section>
 
@@ -32,7 +33,7 @@ export default function HomePage() {
         >
           <h2 className="text-xl font-semibold">Pierre-feuille-ciseaux</h2>
           <p className="text-muted mt-1 text-sm">
-            Cinq manches. L&apos;IA joue au hasard, pour l&apos;instant.
+            Cinq manches. L&apos;IA joue au hasard, ou apprend de vos coups si vous l&apos;osez.
           </p>
         </Link>
       </section>

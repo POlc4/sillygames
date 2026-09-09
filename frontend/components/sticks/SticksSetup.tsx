@@ -4,14 +4,18 @@ import { useState, type FormEvent } from "react";
 
 import type { FirstPlayer } from "@/lib/api";
 
-export type SticksOptions = { sticks: number; first: FirstPlayer; strategy: "random" | "perfect" };
+export type SticksOptions = {
+  sticks: number;
+  first: FirstPlayer;
+  strategy: "random" | "perfect" | "ml";
+};
 
 type Props = { busy: boolean; onStart: (options: SticksOptions) => void };
 
 export function SticksSetup({ busy, onStart }: Props) {
   const [sticks, setSticks] = useState(21);
   const [first, setFirst] = useState<FirstPlayer>("player");
-  const [strategy, setStrategy] = useState<"random" | "perfect">("random");
+  const [strategy, setStrategy] = useState<"random" | "perfect" | "ml">("random");
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -72,6 +76,16 @@ export function SticksSetup({ busy, onStart }: Props) {
               onChange={() => setStrategy("perfect")}
             />
             Expert
+          </label>
+          <label className="flex items-center gap-1">
+            <input
+              type="radio"
+              name="strategy"
+              value="ml"
+              checked={strategy === "ml"}
+              onChange={() => setStrategy("ml")}
+            />
+            Apprenante
           </label>
         </div>
       </fieldset>

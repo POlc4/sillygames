@@ -16,8 +16,8 @@ from app.schemas import RpsConfig, SticksConfig
 
 # Stratégies d'IA acceptées par jeu.
 STRATEGIES: dict[str, frozenset[str]] = {
-    "sticks": frozenset({"random", "perfect"}),
-    "rps": frozenset({"random"}),
+    "sticks": frozenset({"random", "perfect", "ml"}),
+    "rps": frozenset({"random", "ml"}),
 }
 
 

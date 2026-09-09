@@ -7,6 +7,7 @@ sans que les routes de l'API aient à connaître les classes.
 import random
 from typing import Protocol
 
+from app.games.ai.ml import NgramRps, QTableSticks
 from app.games.ai.perfect import PerfectSticks
 from app.games.ai.random_strategy import RandomRps, RandomSticks
 from app.games.rps import RpsMove, RpsState
@@ -21,13 +22,15 @@ class RpsStrategy(Protocol):
     def choose(self, state: RpsState) -> RpsMove: ...
 
 
-STICKS_STRATEGIES: dict[str, type[RandomSticks] | type[PerfectSticks]] = {
+STICKS_STRATEGIES: dict[str, type[RandomSticks] | type[PerfectSticks] | type[QTableSticks]] = {
     "random": RandomSticks,
     "perfect": PerfectSticks,
+    "ml": QTableSticks,
 }
 
-RPS_STRATEGIES: dict[str, type[RandomRps]] = {
+RPS_STRATEGIES: dict[str, type[RandomRps] | type[NgramRps]] = {
     "random": RandomRps,
+    "ml": NgramRps,
 }
 
 

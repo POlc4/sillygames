@@ -33,7 +33,8 @@ Décisions prises avec l'utilisateur :
 | 7, 8 | code prêt | deploy/, deploy.yml, backup.yml, runbook. **Bloqué par la VM** : inscription Oracle à retenter, sinon repli Render + Neon |
 | 9 | à faire | vérification en prod une fois la VM en place |
 | 2 bis (OAuth) | fait (code) | backend + frontend + tests ; il reste à enregistrer les applications chez chaque fournisseur (runbook) |
-| Phase 2, 3, 4 | à faire | |
+| Phase 2 (ML) | fait (code) | stratégies `ml` (n-grammes RPS, table Q bâtonnets), scripts `backend/ml/`, `train.yml` ; le prior RPS attend des parties réelles |
+| Phase 3, 4 | à faire | |
 
 Réglages GitHub encore à faire par l'utilisateur : voir `docs/runbook.md` (approbation des workflows externes, secret scanning, ruleset, « Allow GitHub Actions to create PRs », secret `CLAUDE_CODE_OAUTH_TOKEN`).
 

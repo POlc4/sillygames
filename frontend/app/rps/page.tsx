@@ -17,6 +17,7 @@ const RpsScene = dynamic(() => import("@/components/three/RpsScene").then((m) =>
 export default function RpsPage() {
   const { game, busy, error, start, play, reset } = useGame<RpsState>("rps");
   const [rounds, setRounds] = useState(5);
+  const [strategy, setStrategy] = useState<"random" | "ml">("random");
   const webgl = useWebGL();
 
   return (
@@ -36,7 +37,7 @@ export default function RpsPage() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            void start("random", { rounds });
+            void start(strategy, { rounds });
           }}
           className="border-border bg-surface space-y-4 rounded-lg border p-4"
         >
@@ -51,6 +52,31 @@ export default function RpsPage() {
               className="border-border bg-background mt-1 block w-32 rounded-md border px-2 py-1"
             />
           </label>
+          <fieldset>
+            <legend className="text-muted text-sm">Adversaire</legend>
+            <div className="mt-1 flex gap-4">
+              <label className="flex items-center gap-1">
+                <input
+                  type="radio"
+                  name="strategy"
+                  value="random"
+                  checked={strategy === "random"}
+                  onChange={() => setStrategy("random")}
+                />
+                Aléatoire
+              </label>
+              <label className="flex items-center gap-1">
+                <input
+                  type="radio"
+                  name="strategy"
+                  value="ml"
+                  checked={strategy === "ml"}
+                  onChange={() => setStrategy("ml")}
+                />
+                Apprenante
+              </label>
+            </div>
+          </fieldset>
           <button
             type="submit"
             disabled={busy || rounds < 1 || rounds > 20}
