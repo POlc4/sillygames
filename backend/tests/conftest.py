@@ -84,6 +84,11 @@ def client(test_settings: Settings, db_session: Session) -> Iterator[TestClient]
 
     app.dependency_overrides[get_db] = override_db
     app.dependency_overrides[get_settings] = lambda: test_settings
+    # Le limiteur de débit est désactivé par défaut : tous les tests partagent la même IP.
+    # tests/test_ratelimit.py le réactive explicitement.
+    app.state.limiter.enabled = False
+    app.state.limiter.reset()
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+    app.state.limiter.enabled = True

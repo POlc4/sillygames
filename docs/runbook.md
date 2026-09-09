@@ -108,4 +108,4 @@ Les migrations Alembic ne sont pas annulées automatiquement : si la version pr�
 
 - Une VM Always Free inactive peut être récupérée par Oracle : la sauvegarde hors VM permet de tout recréer en dix minutes. Un moniteur externe gratuit (UptimeRobot) prévient de l'arrêt.
 - CSP avec `'unsafe-inline'` pour les scripts : à durcir avec un nonce généré par un middleware Next.
-- Pas de limitation de débit sur `/api/auth/*` : à ajouter (slowapi côté backend) avant d'ouvrir le site largement.
+- Limitation de débit sur `/api/auth/*` : 10 requêtes par minute et par IP (`AUTH_RATE_LIMIT`), compteur en mémoire du processus backend. Suffisant pour une instance ; à passer sur Redis si le backend est répliqué.

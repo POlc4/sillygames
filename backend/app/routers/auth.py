@@ -1,6 +1,6 @@
 """Authentification : invité, inscription (conversion de l'invité), connexion, déconnexion."""
 
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from sqlalchemy import select
 
 from app.auth.deps import (
@@ -13,14 +13,20 @@ from app.auth.deps import (
 )
 from app.auth.security import hash_password, verify_password
 from app.models import Player
+from app.ratelimit import auth_limit, limiter
 from app.schemas import LoginIn, PlayerOut, RegisterIn
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/guest", response_model=PlayerOut)
+@limiter.limit(auth_limit)
 def guest(
-    response: Response, db: DbSession, settings: AppSettings, player: OptionalPlayer
+    request: Request,
+    response: Response,
+    db: DbSession,
+    settings: AppSettings,
+    player: OptionalPlayer,
 ) -> Player:
     """Crée un joueur invité et ouvre la session. Idempotent si une session existe déjà."""
     if player is not None:
@@ -34,7 +40,9 @@ def guest(
 
 
 @router.post("/register", response_model=PlayerOut, status_code=status.HTTP_201_CREATED)
+@limiter.limit(auth_limit)
 def register(
+    request: Request,
     body: RegisterIn,
     response: Response,
     db: DbSession,
@@ -64,7 +72,10 @@ def register(
 
 
 @router.post("/login", response_model=PlayerOut)
-def login(body: LoginIn, response: Response, db: DbSession, settings: AppSettings) -> Player:
+@limiter.limit(auth_limit)
+def login(
+    request: Request, body: LoginIn, response: Response, db: DbSession, settings: AppSettings
+) -> Player:
     player = db.scalar(select(Player).where(Player.username == body.username))
     if player is None or player.password_hash is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid credentials")

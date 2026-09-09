@@ -5,11 +5,14 @@ Toutes les routes sont sous /api : Caddy route ce préfixe vers le backend.
 
 from fastapi import APIRouter, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.auth.deps import DbSession
 from app.config import get_settings
+from app.ratelimit import limiter
 from app.routers import auth, games, stats
 
 settings = get_settings()
@@ -20,6 +23,8 @@ app = FastAPI(
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,

@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     # True en production (HTTPS derrière Caddy).
     cookie_secure: bool = False
     cors_origins: list[str] = ["http://localhost:3000"]
+    # Limite par adresse IP sur les routes d'authentification (format slowapi).
+    auth_rate_limit: str = "10/minute"
 
 
 @lru_cache
