@@ -15,10 +15,37 @@ Procédures d'exploitation. Mis à jour à chaque changement d'infra ou de CI.
 
 - Settings > Actions > General : « Require approval for all external contributors » ; workflow permissions en lecture seule ; cocher « Allow GitHub Actions to create and approve pull requests » (nécessaire à release-please et aux PR ouvertes par Claude).
 - Settings > Code security : Dependabot alerts et security updates, secret scanning, push protection, private vulnerability reporting.
-- Settings > Rules > Rulesets sur `main` : PR obligatoire, checks requis (`Backend`, `Frontend`, `Images`, `Secrets (gitleaks)`), pas de force push, historique linéaire.
+- Settings > Rules > Rulesets sur `main` : voir la section « Protéger main » ci-dessous.
 - Secrets (Settings > Secrets and variables > Actions) :
   - `CLAUDE_CODE_OAUTH_TOKEN` : posé par `claude /install-github-app` depuis le terminal, ou à la main. Sans lui, les workflows Claude se sautent proprement.
   - `VM_HOST`, `VM_USER`, `VM_SSH_KEY` : étape 7, dans l'environnement `production`.
+
+## Protéger main : aucune modification sans PR, revue et CI
+
+Les rulesets sont gratuits sur un dépôt public (sur un dépôt privé, ils exigent un plan payant). Settings > Rules > Rulesets > New branch ruleset :
+
+| Réglage | Valeur |
+| --- | --- |
+| Name / Enforcement | `main` / Active |
+| Target branches | Include default branch |
+| Bypass list | **vide** (le propriétaire ne peut pas contourner non plus) |
+| Restrict deletions | coché |
+| Require linear history | coché (squash merge uniquement) |
+| Require a pull request before merging | coché ; Required approvals : `0` en solo (on ne peut pas approuver sa propre PR ; passer à `1` dès qu'un second relecteur existe) ; Dismiss stale approvals ; Require conversation resolution |
+| Require status checks to pass | coché, « Require branches to be up to date » ; checks : `Backend (ruff, mypy, pytest)`, `Frontend (prettier, eslint, tsc, vitest, build)`, `Images (hadolint, compose build, e2e Playwright)`, `Secrets (gitleaks)`, `Images (Trivy) (backend)`, `Images (Trivy) (frontend)`, `commitlint` |
+| Block force pushes | coché |
+
+Effets : plus aucun push direct sur `main`, ni depuis un poste, ni par Claude. La « revue » en solo est la revue automatique de Claude (workflow `claude-review.yml`) plus ta relecture avant de cliquer « Squash and merge ».
+
+Nouveau cycle de travail, pour toi comme pour Claude :
+
+```bash
+git switch -c feat/ma-modification main
+# ... commits conventionnels ...
+git push -u origin feat/ma-modification   # git affiche le lien « Create a pull request »
+```
+
+Ouvrir la PR (lien affiché, ou `gh pr create` si `gh` est authentifié), attendre la CI et la revue, merger en squash depuis GitHub. Claude n'ayant pas d'authentification GitHub, c'est toi qui merges. Les PR de Dependabot et de release-please suivent le même chemin.
 
 ## Vérifier avant de merger
 

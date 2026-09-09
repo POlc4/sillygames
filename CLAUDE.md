@@ -15,7 +15,7 @@ Projet d'apprentissage du déploiement conteneurisé. Le plan complet est dans `
 
 - **Commits** : Conventional Commits en anglais (`feat:`, `fix:`, `docs:`, `ci:`, `chore:`, `refactor:`, `test:`). Scope optionnel : `feat(backend): ...`. Le CHANGELOG est généré par release-please, jamais édité à la main.
 - **Langue** : code, commits, noms de fichiers en anglais. Documentation, ADR, README, commentaires d'explication en français.
-- **Branches** : `main` protégée, une PR par intention, squash merge. Une PR ouverte par Claude passe la même CI et la même revue que les autres, jamais de merge automatique.
+- **Branches** : `main` est protégée par un ruleset (voir `docs/runbook.md`, « Protéger main ») : aucun push direct, une branche et une PR par intention, squash merge après CI verte et revue. Claude travaille toujours sur une branche `feat/…`, `fix/…`, `docs/…` ou `ci/…`, pousse la branche et laisse l'utilisateur ouvrir ou merger la PR ; jamais de push sur `main`, jamais de merge automatique.
 - **Tests, règle générale** : aucun comportement n'est livré sans test, dans tout le projet. Une PR qui ajoute ou modifie un comportement sans test correspondant est refusée. Trois niveaux, tous exécutés en CI :
   - *Unitaires* : logique pure sans I/O (moteurs de jeu, stratégies d'IA, sécurité, hooks et utilitaires front). Backend `pytest`, frontend `vitest`.
   - *Intégration* : chaque route API testée via `TestClient` contre un vrai Postgres migré par Alembic (`backend/tests/conftest.py`), jamais avec SQLite ni mocks de la base. Les appels réseau externes (OAuth, etc.) sont simulés. Côté front, composants testés avec Testing Library contre une API simulée (MSW).
