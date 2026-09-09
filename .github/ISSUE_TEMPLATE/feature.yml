@@ -1,0 +1,25 @@
+name: Évolution
+description: Une fonctionnalité ou une amélioration.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: Besoin
+      description: Ce que l'on veut obtenir et pourquoi. Rattacher à une étape ou une phase du plan (docs/plan.md) si possible.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposition
+      description: Approche envisagée, alternatives écartées. Une décision d'architecture donnera lieu à un ADR.
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Périmètre
+      options:
+        - label: Backend
+        - label: Frontend
+        - label: Infra / CI / déploiement
+        - label: Documentation

@@ -1,0 +1,30 @@
+name: Bug
+description: Un comportement incorrect, en local ou en production.
+labels: [bug]
+body:
+  - type: textarea
+    id: steps
+    attributes:
+      label: Étapes pour reproduire
+      placeholder: "1. Ouvrir /sticks  2. Choisir 21 bâtonnets, IA experte  3. Retirer 3"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportement attendu
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportement observé (message d'erreur, capture, logs)
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Environnement
+      options: [Production, Stack docker compose locale, Devcontainer]
+    validations:
+      required: true

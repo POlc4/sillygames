@@ -1,0 +1,21 @@
+# À chaque merge sur main, release-please maintient une PR de release (CHANGELOG + version)
+# à partir des commits conventionnels. Merger cette PR crée le tag vX.Y.Z et la release GitHub.
+# Prérequis : Settings > Actions > General > "Allow GitHub Actions to create and approve pull requests".
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

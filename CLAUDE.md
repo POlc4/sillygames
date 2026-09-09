@@ -23,7 +23,8 @@ Projet d'apprentissage du déploiement conteneurisé. Le plan complet est dans `
   - Seuils de couverture bloquants : backend 80 %, frontend 70 %. Les tests vérifient un comportement observable, pas une implémentation.
 - **Migrations** : une migration Alembic mergée n'est jamais modifiée, on en crée une nouvelle.
 - **Secrets** : jamais en dur ni commités. `.env` local, GitHub Secrets en CI, `.env` sur la VM. `gitleaks` tourne en pre-commit et en CI.
-- **Docker** : images de prod minimales, non-root, multi-stage. L'image du devcontainer contient l'outillage et ne sert jamais de base aux images de prod. Toute action GitHub est épinglée par SHA de commit.
+- **Docker** : images de prod minimales, non-root (UID numérique), multi-stage, `HEALTHCHECK` en notation JSON. L'image du devcontainer contient l'outillage et ne sert jamais de base aux images de prod.
+- **Workflows GitHub** : toute action est épinglée par SHA de commit avec la version en commentaire. Jamais `pull_request_target`. Un workflow qui réagit à des commentaires ou à des PR filtre sur `author_association` (OWNER, MEMBER, COLLABORATOR) et sur l'origine (pas de fork). Les secrets ne sont jamais lus dans un `if` de job : un premier step teste leur présence et les suivants s'y conditionnent.
 - **Logique de jeu** : hors des composants 3D. Les scènes reçoivent l'état et émettent des intentions (`onTake(n)`, `onPick(move)`).
 
 ## Documentation

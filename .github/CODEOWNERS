@@ -1,0 +1,6 @@
+# Relecteur par défaut de toute PR. En solo, sert surtout de documentation ; deviendra utile
+# avec des contributeurs. Les zones sensibles sont listées explicitement.
+* @POlc4
+/deploy/ @POlc4
+/.github/ @POlc4
+/backend/alembic/ @POlc4
