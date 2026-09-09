@@ -74,6 +74,22 @@ class MoveIn(BaseModel):
     move: StrictInt | StrictStr
 
 
+class ImportTurn(BaseModel):
+    player_move: StrictInt | StrictStr | None = None
+    ai_move: StrictInt | StrictStr | None = None
+
+
+class GameImport(BaseModel):
+    """Partie jouée hors ligne (PWA), rejouée par le serveur avant d'être enregistrée."""
+
+    game_type: GameType
+    ai_strategy: str = Field(default="random", max_length=16)
+    config: dict[str, Any] = Field(default_factory=dict)
+    turns: list[ImportTurn] = Field(min_length=1, max_length=100)
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+
+
 class MoveOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

@@ -168,6 +168,68 @@ def _play_rps(
     return Turn(rps_to_json(state), player_move.value, ai_move.value, rps_to_json(after))
 
 
+class ReplayError(ValueError):
+    """Partie hors ligne invalide : coup illégal, séquence incomplète ou incohérente."""
+
+
+def replay(
+    game_type: str, config: dict[str, Any], turns: list[tuple[int | str | None, int | str | None]]
+) -> list[Turn]:
+    """Rejoue une partie jouée hors ligne (coups joueur et IA fournis) et vérifie chaque coup.
+
+    Le client a choisi les coups de l'IA avec ses propres stratégies ; le serveur ne peut pas
+    reproduire leur aléa, il vérifie donc seulement la légalité et l'enchaînement, et n'accepte
+    que des parties terminées.
+    """
+    result: list[Turn] = []
+    if game_type == "sticks":
+        state = sticks.new_game(config["sticks"], Player(config["first"]))
+        for player_move, ai_move in turns:
+            before = sticks_to_json(state)
+            try:
+                if state.current is Player.PLAYER:
+                    if not isinstance(player_move, int) or isinstance(player_move, bool):
+                        raise ReplayError("player move expected")
+                    state = sticks.apply(state, player_move)
+                    if not state.finished:
+                        if not isinstance(ai_move, int) or isinstance(ai_move, bool):
+                            raise ReplayError("ai move expected")
+                        state = sticks.apply(state, ai_move)
+                    elif ai_move is not None:
+                        raise ReplayError("ai move after the end of the game")
+                else:
+                    # Tour 0 : ouverture de l'IA.
+                    if player_move is not None or not isinstance(ai_move, int):
+                        raise ReplayError("opening turn must only contain the ai move")
+                    state = sticks.apply(state, ai_move)
+            except IllegalMoveError as exc:
+                raise ReplayError(str(exc)) from exc
+            result.append(
+                Turn(
+                    before,
+                    None if player_move is None else str(player_move),
+                    None if ai_move is None else str(ai_move),
+                    sticks_to_json(state),
+                )
+            )
+        if not state.finished:
+            raise ReplayError("game is not finished")
+        return result
+
+    rps_state = rps.new_game(config["rounds"])
+    for player_move, ai_move in turns:
+        before = rps_to_json(rps_state)
+        try:
+            p, a = RpsMove(str(player_move)), RpsMove(str(ai_move))
+            rps_state = rps.play_round(rps_state, p, a)
+        except (ValueError, IllegalMoveError) as exc:
+            raise ReplayError(str(exc)) from exc
+        result.append(Turn(before, p.value, a.value, rps_to_json(rps_state)))
+    if not rps_state.finished:
+        raise ReplayError("game is not finished")
+    return result
+
+
 def outcome(game_type: str, state: dict[str, Any]) -> Outcome | None:
     """Résultat du point de vue du joueur, None tant que la partie n'est pas finie."""
     if game_type == "sticks":

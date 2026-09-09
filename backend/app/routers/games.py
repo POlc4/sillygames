@@ -12,7 +12,7 @@ from sqlalchemy.orm import selectinload
 from app.auth.deps import CurrentPlayer, DbSession
 from app.deps import Rng
 from app.models import Game, Move
-from app.schemas import GameCreate, GameOut, GameSummary, MoveIn, MoveOut
+from app.schemas import GameCreate, GameImport, GameOut, GameSummary, MoveIn, MoveOut
 from app.services import play
 
 router = APIRouter(prefix="/games", tags=["games"])
@@ -86,6 +86,49 @@ def create_game(body: GameCreate, player: CurrentPlayer, db: DbSession, rng: Rng
     first_turn = play.opening(body.game_type, config, body.ai_strategy, rng)
     if first_turn is not None:
         _record(game, first_turn)
+    db.add(game)
+    db.commit()
+    db.refresh(game)
+    return _to_out(game)
+
+
+@router.post("/import", response_model=GameOut, status_code=status.HTTP_201_CREATED)
+def import_game(body: GameImport, player: CurrentPlayer, db: DbSession, rng: Rng) -> GameOut:
+    """Enregistre une partie jouée hors ligne après l'avoir rejouée coup par coup.
+
+    Les coups de l'IA ont été choisis par le client : seule leur légalité est vérifiée.
+    La partie est marquée `offline` dans sa config pour rester distinguable dans les stats.
+    """
+    if not play.strategy_allowed(body.game_type, body.ai_strategy):
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            f"unknown strategy {body.ai_strategy!r} for {body.game_type}",
+        )
+    try:
+        config = play.normalize_config(body.game_type, body.config, rng)
+        if body.game_type == "sticks" and body.config.get("first") == "random":
+            raise play.ReplayError("first player must be resolved in an offline game")
+        turns = play.replay(
+            body.game_type, config, [(t.player_move, t.ai_move) for t in body.turns]
+        )
+    except ValidationError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, exc.errors()) from exc
+    except play.ReplayError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+
+    game = Game(
+        player_id=player.id,
+        game_type=body.game_type,
+        ai_strategy=body.ai_strategy,
+        config={**config, "offline": True},
+        status="in_progress",
+    )
+    if body.started_at is not None:
+        game.started_at = body.started_at
+    for turn in turns:
+        _record(game, turn)
+    if body.finished_at is not None:
+        game.finished_at = body.finished_at
     db.add(game)
     db.commit()
     db.refresh(game)
