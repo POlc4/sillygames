@@ -5,7 +5,12 @@ FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
 ARG HADOLINT_VERSION=2.12.0
 ARG GITLEAKS_VERSION=8.21.2
 
+# pipefail : une commande qui échoue dans un pipe fait échouer le RUN (hadolint DL4006).
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 # postgresql-client : psql pour inspecter la base depuis le conteneur.
+# Version apt non épinglée volontairement (outillage de dev, pas image de prod).
+# hadolint ignore=DL3008
 RUN apt-get update \
     && apt-get install -y --no-install-recommends postgresql-client \
     && rm -rf /var/lib/apt/lists/*

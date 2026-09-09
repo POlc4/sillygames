@@ -7,7 +7,8 @@ Projet d'apprentissage du déploiement conteneurisé. Le plan complet est dans `
 - Backend : Python 3.12, FastAPI, SQLAlchemy 2, Alembic, géré avec `uv`. Dans `backend/` : `uv run pytest`, `uv run ruff check .`, `uv run ruff format .`, `uv run mypy app`.
 - Frontend : Next.js (App Router, TypeScript, Tailwind), React Three Fiber pour la 3D. Dans `frontend/` : `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`.
 - Base : PostgreSQL 16 via `docker compose up -d postgres`. URL de dev dans `.env` (modèle : `.env.example`).
-- Stack complète en conteneurs : `docker compose up --build` depuis le terminal WSL de l'hôte, pas depuis le devcontainer.
+- Stack complète en conteneurs : `docker compose up --build -d --wait` depuis le terminal WSL de l'hôte, pas depuis le devcontainer.
+- Sans outil sur l'hôte (tout dans des conteneurs jetables) : `./scripts/backend-check.sh`, `./scripts/frontend-check.sh`, `./scripts/e2e.sh` (Playwright contre la stack compose).
 - Hooks : `pre-commit run --all-files`.
 
 ## Conventions

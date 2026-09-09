@@ -1,6 +1,7 @@
-# Environnement de développement.
-# Chargé aussi par le devcontainer (.devcontainer/devcontainer.json), qui ajoute le service "dev".
-# Les services backend et frontend seront ajoutés à l'étape 5 du plan.
+# Stack locale complète, avec les mêmes images qu'en production.
+# - postgres seul : docker compose up -d postgres (dev dans le devcontainer, backend/front en hot-reload)
+# - tout : docker compose up --build (intégration, tests bout en bout)
+# Chargé aussi par le devcontainer, qui n'en démarre que postgres.
 name: sillygames
 
 services:
@@ -20,6 +21,32 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  backend:
+    build: ./backend
+    image: sillygames-backend:local
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-sillygames}:${POSTGRES_PASSWORD:-sillygames}@postgres:5432/${POSTGRES_DB:-sillygames}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-dev-only-change-me-000}
+      COOKIE_SECURE: "false"
+      CORS_ORIGINS: '["http://localhost:3000"]'
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        API_URL: http://backend:8000
+    image: sillygames-frontend:local
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
 
 volumes:
   pgdata:

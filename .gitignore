@@ -36,3 +36,5 @@ Thumbs.db
 
 # Deploy
 deploy/backups/
+playwright-report/
+test-results/
