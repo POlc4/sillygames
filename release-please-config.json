@@ -15,7 +15,6 @@
   "packages": {
     ".": {
       "extra-files": [
-        { "type": "toml", "path": "backend/pyproject.toml", "jsonpath": "$.project.version" },
         { "type": "json", "path": "frontend/package.json", "jsonpath": "$.version" }
       ]
     }
