@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 
 import { Header } from "@/components/Header";
+import { OfflineStatus } from "@/components/OfflineStatus";
 import { ServiceWorker } from "@/components/ServiceWorker";
 import { SessionProvider } from "@/lib/session";
 
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="bg-background text-foreground flex min-h-full flex-col">
         <SessionProvider>
           <Header />
+          <OfflineStatus />
           <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">{children}</main>
           <footer className="text-muted px-4 py-6 text-center text-sm">
             SillyGames, projet d&apos;apprentissage du déploiement conteneurisé.

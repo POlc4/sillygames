@@ -132,6 +132,14 @@ export const api = {
   playMove: <S>(gameId: string, move: number | string) =>
     request<Game<S>>("POST", `/games/${gameId}/moves`, { move }),
   getGame: <S>(gameId: string) => request<Game<S>>("GET", `/games/${gameId}`),
+  importGame: <S>(body: {
+    game_type: GameType;
+    ai_strategy: string;
+    config: Record<string, unknown>;
+    turns: { player_move: number | string | null; ai_move: number | string | null }[];
+    started_at?: string;
+    finished_at?: string;
+  }) => request<Game<S>>("POST", "/games/import", body),
   listGames: () => request<GameSummary[]>("GET", "/games"),
 
   statsMe: () => request<PlayerStats>("GET", "/stats/me"),

@@ -34,7 +34,7 @@ Décisions prises avec l'utilisateur :
 | 9 | à faire | vérification en prod une fois la VM en place |
 | 2 bis (OAuth) | fait (code) | backend + frontend + tests ; il reste à enregistrer les applications chez chaque fournisseur (runbook) |
 | Phase 2 (ML) | fait (code) | stratégies `ml` (n-grammes RPS, table Q bâtonnets), scripts `backend/ml/`, `train.yml` ; le prior RPS attend des parties réelles |
-| Phase 3 (PWA) | palier 1 fait, palier 2 entamé | manifest, icônes, service worker vanille, page hors ligne, bannière de mise à jour ; moteurs portés en TypeScript (`frontend/lib/engines`) ; reste : parties hors ligne en IndexedDB, `POST /api/games/import` avec rejeu, palier 3 (push) |
+| Phase 3 (PWA) | paliers 1 et 2 faits | manifest, icônes, service worker vanille, page hors ligne, bannière de mise à jour ; moteurs TypeScript, parties locales mises en file (localStorage) et importées via `POST /api/games/import` avec rejeu serveur ; reste : palier 3 (push, optionnel) et vérification sur mobile réel |
 | Phase 4 | à faire | optionnelle |
 
 Réglages GitHub encore à faire par l'utilisateur : voir `docs/runbook.md` (approbation des workflows externes, secret scanning, ruleset, « Allow GitHub Actions to create PRs », secret `CLAUDE_CODE_OAUTH_TOKEN`).
