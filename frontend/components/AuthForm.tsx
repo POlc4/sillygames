@@ -1,10 +1,22 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState, type FormEvent } from "react";
 
+import { OAuthButtons } from "@/components/OAuthButtons";
 import { api, ApiError } from "@/lib/api";
 import { useSession } from "@/lib/session";
+
+/** Message d'échec renvoyé par le backend après un flux OAuth raté (?error=oauth&reason=…). */
+function OAuthErrorNotice() {
+  const params = useSearchParams();
+  if (params.get("error") !== "oauth") return null;
+  return (
+    <p role="alert" className="text-sm text-red-600">
+      La connexion externe a échoué ({params.get("reason") ?? "raison inconnue"}). Réessayez.
+    </p>
+  );
+}
 
 type Props = { mode: "login" | "register" };
 
@@ -56,6 +68,9 @@ export function AuthForm({ mode }: Props) {
       className="border-border bg-surface max-w-sm space-y-4 rounded-lg border p-4"
     >
       <h1 className="text-2xl font-bold">{COPY[mode].title}</h1>
+      <Suspense fallback={null}>
+        <OAuthErrorNotice />
+      </Suspense>
       {mode === "register" && (
         <p className="text-muted text-sm">
           Vos parties d&apos;invité seront rattachées à ce compte. Pas d&apos;e-mail, donc pas de
@@ -97,6 +112,7 @@ export function AuthForm({ mode }: Props) {
       >
         {COPY[mode].submit}
       </button>
+      <OAuthButtons returnTo="/" />
     </form>
   );
 }

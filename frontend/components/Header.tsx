@@ -26,9 +26,14 @@ export function Header() {
         <span className="ml-auto flex items-center gap-3 text-sm">
           <span aria-live="polite">{loading ? "…" : displayName(player)}</span>
           {registered ? (
-            <button type="button" onClick={() => void logout()} className="underline">
-              Déconnexion
-            </button>
+            <>
+              <Link href="/account" className="underline">
+                Compte
+              </Link>
+              <button type="button" onClick={() => void logout()} className="underline">
+                Déconnexion
+              </button>
+            </>
           ) : (
             <>
               <Link href="/login" className="underline">

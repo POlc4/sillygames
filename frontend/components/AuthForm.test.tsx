@@ -7,7 +7,11 @@ import { SessionProvider } from "@/lib/session";
 import { ALICE, http, HttpResponse, server } from "@/tests/msw/server";
 
 const push = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+let search = "";
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push }),
+  useSearchParams: () => new URLSearchParams(search),
+}));
 
 async function fill(username: string, password: string) {
   const user = userEvent.setup();
@@ -73,5 +77,35 @@ describe("AuthForm", () => {
     );
     await user.click(screen.getByRole("button", { name: "Créer mon compte" }));
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/Pseudo de 3 à 32/));
+  });
+});
+
+describe("AuthForm with OAuth", () => {
+  it("shows the OAuth failure reason coming back from the backend", async () => {
+    search = "error=oauth&reason=state+mismatch";
+    render(
+      <SessionProvider>
+        <AuthForm mode="login" />
+      </SessionProvider>,
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent("state mismatch");
+    search = "";
+  });
+
+  it("offers the enabled providers under the form", async () => {
+    server.use(
+      http.get("*/api/auth/providers", () =>
+        HttpResponse.json([{ name: "github", label: "GitHub" }]),
+      ),
+    );
+    render(
+      <SessionProvider>
+        <AuthForm mode="register" />
+      </SessionProvider>,
+    );
+    expect(await screen.findByRole("link", { name: "GitHub" })).toHaveAttribute(
+      "href",
+      "/api/auth/oauth/github/start?return_to=%2F",
+    );
   });
 });

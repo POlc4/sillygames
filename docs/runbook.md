@@ -98,6 +98,19 @@ Les migrations Alembic ne sont pas annulées automatiquement : si la version pr�
   ```
   Pour une VM neuve : `vm-setup.sh`, copier le dump, restaurer avant le premier démarrage du backend (les migrations s'appliqueront sur un schéma déjà à jour sans dégât).
 
+## Fournisseurs OAuth (étape 2 bis)
+
+Chaque fournisseur est activé en posant `OAUTH_<NOM>_CLIENT_ID` et `OAUTH_<NOM>_CLIENT_SECRET` dans `.env` (VM) ou `.env` (dev), puis `docker compose up -d backend`. URL de retour à déclarer : `https://<DOMAIN>/api/auth/oauth/<nom>/callback` (en dev `http://localhost:3000/...`).
+
+| Fournisseur | Console | Notes |
+| --- | --- | --- |
+| github | github.com/settings/developers > OAuth Apps > New | immédiat, localhost accepté |
+| google | console.cloud.google.com > APIs & Services > Credentials > OAuth client ID (Web) | écran de consentement en mode test avec ta liste d'utilisateurs, puis « Publish » ; scopes `openid email profile` sans vérification |
+| microsoft | entra.microsoft.com > App registrations > New (comptes personnels et professionnels) | secret dans Certificates & secrets, expire (24 mois max) : noter la date |
+| facebook | developers.facebook.com > Create app > Facebook Login | reste en mode développement (testeurs seulement) sans revue Meta ; exige une URL de politique de confidentialité |
+
+Contrôle : `curl https://<DOMAIN>/api/auth/providers` liste les fournisseurs actifs ; le bouton correspondant apparaît sur /login, /register et /account.
+
 ## Rotation des secrets
 
 - `JWT_SECRET` : nouvelle valeur dans `.env`, `docker compose up -d backend`. Toutes les sessions sont invalidées, les joueurs redeviennent invités jusqu'à reconnexion.

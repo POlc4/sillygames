@@ -77,6 +77,7 @@ export const defaultHandlers = [
   http.get("*/api/auth/me", () => HttpResponse.json(GUEST)),
   http.post("*/api/auth/guest", () => HttpResponse.json(GUEST)),
   http.post("*/api/auth/logout", () => new HttpResponse(null, { status: 204 })),
+  http.get("*/api/auth/providers", () => HttpResponse.json([])),
 ];
 
 export const server = setupServer(...defaultHandlers);

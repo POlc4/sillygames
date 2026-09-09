@@ -28,6 +28,21 @@ class LoginIn(BaseModel):
     password: str = Field(max_length=128)
 
 
+class ProviderOut(BaseModel):
+    name: str
+    label: str
+
+
+class IdentityOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    provider: str
+    email: str | None
+    display_name: str | None
+    created_at: datetime
+
+
 # --- Jeux ---------------------------------------------------------------------
 
 GameType = Literal["sticks", "rps"]

@@ -64,9 +64,24 @@ export type StatLine = {
   win_rate: number;
 };
 
+export type Provider = { name: string; label: string };
+
+export type Identity = {
+  id: string;
+  provider: string;
+  email: string | null;
+  display_name: string | null;
+  created_at: string;
+};
+
 export type PlayerStats = { lines: StatLine[]; games: number; wins: number };
 export type GlobalStats = PlayerStats & { players: number };
 export type LeaderboardEntry = { username: string; games: number; wins: number; win_rate: number };
+
+/** URL de départ du flux OAuth : une navigation complète, pas un fetch (redirections + cookies). */
+export function oauthStartUrl(provider: string, returnTo = "/"): string {
+  return `/api/auth/oauth/${provider}/start?return_to=${encodeURIComponent(returnTo)}`;
+}
 
 export class ApiError extends Error {
   constructor(
@@ -108,6 +123,9 @@ export const api = {
   login: (username: string, password: string) =>
     request<Player>("POST", "/auth/login", { username, password }),
   logout: () => request<void>("POST", "/auth/logout"),
+  providers: () => request<Provider[]>("GET", "/auth/providers"),
+  identities: () => request<Identity[]>("GET", "/auth/identities"),
+  unlinkIdentity: (id: string) => request<void>("DELETE", `/auth/identities/${id}`),
 
   createGame: <S>(game_type: GameType, ai_strategy: string, config: Record<string, unknown>) =>
     request<Game<S>>("POST", "/games", { game_type, ai_strategy, config }),

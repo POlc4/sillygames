@@ -22,6 +22,18 @@ class Settings(BaseSettings):
     # Limite par adresse IP sur les routes d'authentification (format slowapi).
     auth_rate_limit: str = "10/minute"
 
+    # URL publique du site, base des URLs de retour OAuth (https://<domaine> en prod).
+    public_url: str = "http://localhost:3000"
+    # Un fournisseur sans client_id/secret est simplement absent de la liste.
+    oauth_github_client_id: str = ""
+    oauth_github_client_secret: str = ""
+    oauth_google_client_id: str = ""
+    oauth_google_client_secret: str = ""
+    oauth_microsoft_client_id: str = ""
+    oauth_microsoft_client_secret: str = ""
+    oauth_facebook_client_id: str = ""
+    oauth_facebook_client_secret: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:

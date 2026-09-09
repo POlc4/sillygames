@@ -74,7 +74,9 @@ def db_session(engine: Engine) -> Iterator[Session]:
     with factory() as session:
         yield session
     with engine.begin() as conn:
-        conn.execute(text("TRUNCATE TABLE moves, games, players RESTART IDENTITY CASCADE"))
+        conn.execute(
+            text("TRUNCATE TABLE moves, games, identities, players RESTART IDENTITY CASCADE")
+        )
 
 
 @pytest.fixture

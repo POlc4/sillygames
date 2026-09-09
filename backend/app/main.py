@@ -13,7 +13,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.auth.deps import DbSession
 from app.config import get_settings
 from app.ratelimit import limiter
-from app.routers import auth, games, stats
+from app.routers import auth, games, oauth, stats
 
 settings = get_settings()
 
@@ -35,6 +35,7 @@ app.add_middleware(
 
 api = APIRouter(prefix="/api")
 api.include_router(auth.router)
+api.include_router(oauth.router)
 api.include_router(games.router)
 api.include_router(stats.router)
 

@@ -34,6 +34,32 @@ class Player(Base):
     )
 
     games: Mapped[list["Game"]] = relationship(back_populates="player")
+    identities: Mapped[list["Identity"]] = relationship(
+        back_populates="player", cascade="all, delete-orphan"
+    )
+
+
+class Identity(Base):
+    """Compte externe (OAuth) rattaché à un joueur. Voir docs/plan.md, étape 2 bis."""
+
+    __tablename__ = "identities"
+    __table_args__ = (
+        UniqueConstraint("provider", "provider_subject", name="uq_identities_provider_subject"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    player_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    provider: Mapped[str] = mapped_column(String(16), nullable=False)
+    provider_subject: Mapped[str] = mapped_column(String(255), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(255))
+    display_name: Mapped[str | None] = mapped_column(String(255))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    player: Mapped[Player] = relationship(back_populates="identities")
 
 
 class Game(Base):
