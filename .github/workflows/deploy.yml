@@ -118,4 +118,5 @@ jobs:
 
       - name: Skipped (no VM configured yet)
         if: steps.vm.outputs.present != 'true'
-        run: echo "VM_HOST / VM_SSH_KEY absents : images publiées sur GHCR, déploiement sauté."
+        run: |
+          echo "VM_HOST / VM_SSH_KEY absents : images publiées sur GHCR, déploiement sauté."

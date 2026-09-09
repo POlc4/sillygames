@@ -21,7 +21,10 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0
 # UID/GID numériques : résolubles par l'hôte et par les politiques runAsNonRoot (hadolint DL3066).
-RUN groupadd --system --gid 10001 app && useradd --system --uid 10001 --gid 10001 --home /app app
+# npm, npx et corepack ne servent pas à l'exécution (node server.js) : on les retire, ce qui
+# supprime leurs dépendances embarquées (ex. tar, CVE critiques signalées par Trivy) et du poids.
+RUN groupadd --system --gid 10001 app && useradd --system --uid 10001 --gid 10001 --home /app app \
+    && rm -rf /usr/local/lib/node_modules /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
 WORKDIR /app
 COPY --from=build --chown=10001:10001 /app/.next/standalone ./
 COPY --from=build --chown=10001:10001 /app/.next/static ./.next/static

@@ -74,6 +74,7 @@ jobs:
           git add backend/app/games/ai/models
           git commit -m "feat(ml): retrain models from production games"
           git push -u origin "$branch"
+          # shellcheck disable=SC2016  # les backticks du corps de PR sont du Markdown, pas du shell
           gh pr create --title "feat(ml): retrain models from production games" \
             --body "$(printf 'Ré-entraînement automatique.\n\n```\n%s\n```\n' "$(cat backend/train.log)")"
 
