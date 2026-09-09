@@ -22,6 +22,15 @@ updates:
         update-types: [minor, patch]
     commit-message:
       prefix: "chore(deps)"
+    ignore:
+      # Versions majeures suivies à la main : elles doivent rester compatibles avec
+      # eslint-config-next (eslint, typescript) et avec le runtime Node 22 (@types/node).
+      - dependency-name: eslint
+        update-types: ["version-update:semver-major"]
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: docker
     directories: ["/backend", "/frontend", "/.devcontainer"]
@@ -30,6 +39,13 @@ updates:
       day: monday
     commit-message:
       prefix: "chore(docker)"
+    ignore:
+      # Node : on suit une LTS choisie explicitement (22), alignée avec la CI et le devcontainer.
+      - dependency-name: "*node*"
+        update-types: ["version-update:semver-major"]
+      # Python : version fixée par pyproject (3.12).
+      - dependency-name: "*python*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: docker-compose
     directory: /
@@ -38,6 +54,11 @@ updates:
       day: monday
     commit-message:
       prefix: "chore(docker)"
+    ignore:
+      # Postgres : une majeure exige une migration des données (pg_upgrade ou dump/restore),
+      # à planifier via le runbook, jamais par une PR automatique.
+      - dependency-name: "*postgres*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
