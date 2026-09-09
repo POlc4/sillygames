@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { open } from "./helpers";
+
 async function remainingSticks(page: Page): Promise<number> {
   const text = await page.locator("p[aria-live] strong").first().textContent();
   return Number(text);
@@ -11,8 +13,10 @@ function winningMove(sticks: number): number {
 }
 
 test("a player using the 4k+1 strategy beats the random AI", async ({ page }) => {
-  await page.goto("/sticks");
-  await page.getByLabel(/Nombre de bâtonnets/).fill("10");
+  await open(page, "/sticks");
+  const count = page.getByLabel(/Nombre de bâtonnets/);
+  await count.fill("10");
+  await expect(count).toHaveValue("10");
   await page.getByLabel("Moi").check();
   await page.getByLabel("Aléatoire").check();
   await page.getByRole("button", { name: "Commencer" }).click();
@@ -36,7 +40,7 @@ test("a player using the 4k+1 strategy beats the random AI", async ({ page }) =>
 });
 
 test("the expert AI wins when it plays second on 21 sticks", async ({ page }) => {
-  await page.goto("/sticks");
+  await open(page, "/sticks");
   await page.getByLabel("Expert").check();
   await page.getByRole("button", { name: "Commencer" }).click();
   await expect(page.locator("p[aria-live] strong").first()).toHaveText("21");

@@ -117,6 +117,12 @@ Contrôle : `curl https://<DOMAIN>/api/auth/providers` liste les fournisseurs ac
 - `POSTGRES_PASSWORD` : `docker compose exec postgres psql -U sillygames -c "ALTER USER sillygames PASSWORD '<nouveau>'"`, puis `.env`, puis `docker compose up -d backend`.
 - Clé SSH de déploiement : nouvelle paire, `authorized_keys` sur la VM, secret `VM_SSH_KEY`, supprimer l'ancienne ligne.
 
+## PWA
+
+- Le service worker (`frontend/public/sw.js`) met en cache les pages visitées et les assets hachés ; `/api` n'est jamais mis en cache. Quand un déploiement change les stratégies de cache, incrémenter `VERSION` dans `sw.js` : les anciens caches sont purgés à l'activation.
+- Après un déploiement, les visiteurs voient la bannière « Nouvelle version disponible » à leur prochaine visite ; « Recharger » active la nouvelle version immédiatement.
+- Test rapide : Chrome > DevTools > Application > Manifest (installabilité) et Service Workers (état, « Update on reload » pour forcer).
+
 ## Limites connues et améliorations
 
 - Une VM Always Free inactive peut être récupérée par Oracle : la sauvegarde hors VM permet de tout recréer en dix minutes. Un moniteur externe gratuit (UptimeRobot) prévient de l'arrêt.
