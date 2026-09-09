@@ -69,7 +69,8 @@ class Move(Base):
     )
     turn: Mapped[int] = mapped_column(Integer, nullable=False)
     state_before: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
-    player_move: Mapped[str] = mapped_column(String(16), nullable=False)
+    # NULL uniquement pour le coup d'ouverture de l'IA (tour 0) quand elle commence.
+    player_move: Mapped[str | None] = mapped_column(String(16))
     ai_move: Mapped[str | None] = mapped_column(String(16))
     state_after: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     created_at: Mapped[datetime] = mapped_column(

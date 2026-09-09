@@ -10,7 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.auth.deps import DbSession
 from app.config import get_settings
-from app.routers import auth
+from app.routers import auth, games, stats
 
 settings = get_settings()
 
@@ -30,6 +30,8 @@ app.add_middleware(
 
 api = APIRouter(prefix="/api")
 api.include_router(auth.router)
+api.include_router(games.router)
+api.include_router(stats.router)
 
 
 @api.get("/health")

@@ -69,3 +69,8 @@ Ce README évolue avec le projet. Chaque étape du plan ajoute ici les commandes
   - Piège : un dossier `alembic/` dans le projet fait classer la bibliothèque `alembic` comme code local par le tri d'imports de ruff. Réglé par `known-third-party` dans `pyproject.toml`.
   - Piège : PyJWT refuse à terme les secrets HS256 de moins de 32 octets. Générer le vrai secret avec `openssl rand -hex 32`.
   - En CI, Postgres tourne comme *service container* du job ; la migration est appliquée, comparée aux modèles (`alembic check`) puis annulée avant les tests.
+- Étape 3 : parties et statistiques. `POST /api/games` crée une partie (type, stratégie d'IA, config validée), `POST /api/games/{id}/moves` applique le coup du joueur puis la réponse de l'IA dans la même requête, chaque tour est enregistré avec l'état avant et après. La partie n'a pas de colonne « état » : l'état courant est l'`state_after` du dernier coup, ou l'état initial dérivé de la config. `GET /api/stats/{me,global,leaderboard}` agrège les parties terminées par jeu et par stratégie.
+  - Migration `0002` : `moves.player_move` devient nullable pour le coup d'ouverture de l'IA (tour 0) quand elle commence. Une migration mergée ne se modifie pas, on en ajoute une.
+  - Piège : en mode souple, pydantic convertit le JSON `true` en entier 1 et `"2"` en 2. Les coups utilisent `StrictInt | StrictStr` pour refuser ces conversions. `Field(strict=True)` ne s'applique pas à une union.
+  - Le générateur aléatoire est une dépendance FastAPI (`app/deps.py`) : les tests l'écrasent avec une graine fixe pour être rejouables.
+  - Deux coups simultanés sur la même partie sont départagés par la contrainte unique `(game_id, turn)` : le second reçoit 409.
