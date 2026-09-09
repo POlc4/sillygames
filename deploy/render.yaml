@@ -1,0 +1,47 @@
+# Plan de repli sans VM (docs/plan.md, risques Oracle) : Render pour les deux services Docker
+# (offre gratuite, mise en veille après inactivité) + Neon pour Postgres (gratuit, hors Render).
+# Utilisation : Render > Blueprints > New Blueprint Instance > ce dépôt > fichier deploy/render.yaml.
+# À renseigner dans le tableau de bord : DATABASE_URL (Neon), JWT_SECRET, éventuels OAUTH_*.
+# Les services sont sur deux domaines : le frontend relaie /api vers l'URL publique du backend
+# (API_URL fourni au build), les cookies restent donc en première partie.
+services:
+  - type: web
+    name: sillygames-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: PUBLIC_URL
+        fromService:
+          type: web
+          name: sillygames-web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: CORS_ORIGINS
+        value: '["https://sillygames-web.onrender.com"]'
+
+  - type: web
+    name: sillygames-web
+    runtime: docker
+    plan: free
+    region: frankfurt
+    rootDir: frontend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    envVars:
+      # Disponible au build comme ARG (Render passe les variables d'environnement aux builds Docker).
+      - key: API_URL
+        fromService:
+          type: web
+          name: sillygames-api
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"

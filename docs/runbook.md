@@ -117,6 +117,17 @@ Contrôle : `curl https://<DOMAIN>/api/auth/providers` liste les fournisseurs ac
 - `POSTGRES_PASSWORD` : `docker compose exec postgres psql -U sillygames -c "ALTER USER sillygames PASSWORD '<nouveau>'"`, puis `.env`, puis `docker compose up -d backend`.
 - Clé SSH de déploiement : nouvelle paire, `authorized_keys` sur la VM, secret `VM_SSH_KEY`, supprimer l'ancienne ligne.
 
+## Plan de repli sans VM : Render + Neon
+
+Si Oracle reste inaccessible, `deploy/render.yaml` décrit les deux services Docker sur Render (offre gratuite, mise en veille après 15 min d'inactivité, réveil en ~30 s) ; la base vient de Neon (Postgres serverless gratuit, sans carte).
+
+1. Neon : créer un projet, copier l'URL de connexion (`postgresql://…`) et la transformer en `postgresql+psycopg://…?sslmode=require`.
+2. Render : Blueprints > New Blueprint Instance > dépôt `POlc4/sillygames` > `deploy/render.yaml`. Renseigner `DATABASE_URL` (Neon) sur `sillygames-api`, et les `OAUTH_*` si besoin.
+3. Le frontend relaie `/api` vers l'URL publique de l'API (variable `API_URL` fournie au build, deux domaines `onrender.com`). Vérifier après le premier déploiement que `https://sillygames-web.onrender.com/api/health` répond.
+4. Ce mode n'utilise ni Caddy ni `deploy.yml` : Render reconstruit à chaque push sur `main`. Le reste (CI, sécurité, releases) est inchangé.
+
+Point à vérifier au premier essai : que Render expose bien `API_URL` comme argument de build Docker (sinon fixer l'URL en dur dans le Dockerfile du frontend via un `ARG` renseigné dans le tableau de bord).
+
 ## PWA
 
 - Le service worker (`frontend/public/sw.js`) met en cache les pages visitées et les assets hachés ; `/api` n'est jamais mis en cache. Quand un déploiement change les stratégies de cache, incrémenter `VERSION` dans `sw.js` : les anciens caches sont purgés à l'activation.
