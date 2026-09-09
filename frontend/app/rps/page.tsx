@@ -1,15 +1,23 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 
 import { GameResult } from "@/components/GameResult";
 import { RpsBoard } from "@/components/rps/RpsBoard";
+import { useWebGL } from "@/components/three/useWebGL";
 import type { RpsState } from "@/lib/api";
 import { useGame } from "@/lib/use-game";
+
+const RpsScene = dynamic(() => import("@/components/three/RpsScene").then((m) => m.RpsScene), {
+  ssr: false,
+  loading: () => <div className="bg-surface h-72 w-full rounded-lg" />,
+});
 
 export default function RpsPage() {
   const { game, busy, error, start, play, reset } = useGame<RpsState>("rps");
   const [rounds, setRounds] = useState(5);
+  const webgl = useWebGL();
 
   return (
     <div className="space-y-6">
@@ -53,6 +61,7 @@ export default function RpsPage() {
         </form>
       ) : (
         <>
+          {webgl && <RpsScene state={game.state} busy={busy} onPick={(move) => void play(move)} />}
           <RpsBoard state={game.state} busy={busy} onPick={(move) => void play(move)} />
           {game.result && <GameResult result={game.result} onReplay={reset} />}
         </>

@@ -7,29 +7,33 @@ import type { SticksState } from "@/lib/api";
 type Props = {
   state: SticksState;
   busy: boolean;
+  // false quand la scène 3D affiche déjà les bâtonnets.
+  showSticks?: boolean;
   onTake: (count: number) => void;
 };
 
-export function SticksBoard({ state, busy, onTake }: Props) {
+export function SticksBoard({ state, busy, showSticks = true, onTake }: Props) {
   const canPlay = !state.finished && !busy && state.current === "player";
 
   return (
     <div className="space-y-6">
-      <div
-        role="img"
-        aria-label={`${state.sticks} bâtonnets restants`}
-        className="border-border bg-surface flex flex-wrap gap-2 rounded-lg border p-4"
-      >
-        {Array.from({ length: state.sticks }, (_, i) => (
-          <span
-            key={i}
-            data-testid="stick"
-            className="bg-accent h-12 w-2 rounded-sm"
-            style={{ transform: `rotate(${((i * 7) % 5) - 2}deg)` }}
-          />
-        ))}
-        {state.sticks === 0 && <span className="text-muted">Plus aucun bâtonnet.</span>}
-      </div>
+      {showSticks && (
+        <div
+          role="img"
+          aria-label={`${state.sticks} bâtonnets restants`}
+          className="border-border bg-surface flex flex-wrap gap-2 rounded-lg border p-4"
+        >
+          {Array.from({ length: state.sticks }, (_, i) => (
+            <span
+              key={i}
+              data-testid="stick"
+              className="bg-accent h-12 w-2 rounded-sm"
+              style={{ transform: `rotate(${((i * 7) % 5) - 2}deg)` }}
+            />
+          ))}
+          {state.sticks === 0 && <span className="text-muted">Plus aucun bâtonnet.</span>}
+        </div>
+      )}
 
       <p className="text-lg" aria-live="polite">
         <strong>{state.sticks}</strong> bâtonnet{state.sticks > 1 ? "s" : ""} restant

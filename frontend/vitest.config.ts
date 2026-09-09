@@ -15,7 +15,7 @@ export default defineConfig({
       provider: "v8",
       include: ["app/**", "components/**", "lib/**"],
       // Les scènes WebGL ne se rendent pas dans jsdom : couvertes par les tests bout en bout.
-      exclude: ["components/three/**", "app/layout.tsx", "**/*.test.{ts,tsx}"],
+      exclude: ["components/three/*Scene.tsx", "app/layout.tsx", "**/*.test.{ts,tsx}"],
       thresholds: { lines: 70, statements: 70, functions: 70, branches: 60 },
       reporter: ["text", "lcov"],
     },

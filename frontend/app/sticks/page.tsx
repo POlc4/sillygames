@@ -1,13 +1,23 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import { GameResult } from "@/components/GameResult";
 import { SticksBoard } from "@/components/sticks/SticksBoard";
 import { SticksSetup, type SticksOptions } from "@/components/sticks/SticksSetup";
+import { useWebGL } from "@/components/three/useWebGL";
 import type { SticksState } from "@/lib/api";
 import { useGame } from "@/lib/use-game";
 
+// La scène WebGL n'existe pas côté serveur : import dynamique sans SSR, fallback 2D sinon.
+const SticksScene = dynamic(
+  () => import("@/components/three/SticksScene").then((m) => m.SticksScene),
+  { ssr: false, loading: () => <div className="bg-surface h-72 w-full rounded-lg" /> },
+);
+
 export default function SticksPage() {
   const { game, busy, error, start, play, reset } = useGame<SticksState>("sticks");
+  const webgl = useWebGL();
 
   function onStart({ sticks, first, strategy }: SticksOptions) {
     void start(strategy, { sticks, first });
@@ -32,7 +42,20 @@ export default function SticksPage() {
         <SticksSetup busy={busy} onStart={onStart} />
       ) : (
         <>
-          <SticksBoard state={game.state} busy={busy} onTake={(n) => void play(n)} />
+          {webgl && (
+            <SticksScene
+              state={game.state}
+              lastMove={lastMove}
+              busy={busy}
+              onTake={(n) => void play(n)}
+            />
+          )}
+          <SticksBoard
+            state={game.state}
+            busy={busy}
+            showSticks={!webgl}
+            onTake={(n) => void play(n)}
+          />
 
           {lastMove?.ai_move && !game.state.finished && (
             <p className="text-muted" aria-live="polite">
