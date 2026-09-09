@@ -1,0 +1,71 @@
+# Production sur la VM : Caddy (HTTPS automatique) devant le frontend et le backend, Postgres local.
+# Fichier copié dans /opt/sillygames avec Caddyfile et .env (voir docs/runbook.md).
+# Seul Caddy expose des ports. Les images viennent de GHCR, jamais construites sur la VM.
+name: sillygames
+
+services:
+  caddy:
+    image: mirror.gcr.io/library/caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN manquant dans .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    image: ghcr.io/${GHCR_OWNER:-polc4}/sillygames-frontend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    logging: *logging
+
+  backend:
+    image: ghcr.io/${GHCR_OWNER:-polc4}/sillygames-backend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://sillygames:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant dans .env}@postgres:5432/sillygames
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET manquant dans .env}
+      COOKIE_SECURE: "true"
+      CORS_ORIGINS: '["https://${DOMAIN}"]'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging: *logging
+
+  postgres:
+    image: mirror.gcr.io/library/postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sillygames
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: sillygames
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sillygames -d sillygames"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    logging: *logging
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

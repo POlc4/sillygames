@@ -170,8 +170,12 @@ jobs:
         run: |
           docker compose ps -a || true
           docker compose logs --no-color --tail 60 || true
+          # Les annotations sont tronquées vers 1 000 caractères : une par ligne d'erreur, puis la fin du log.
           if [ -f /tmp/build.log ]; then
-            echo "::error title=docker compose build (tail)::$(tail -c 3500 /tmp/build.log | tr '\n' ' ')"
+            grep -aiE "error|failed|fatal|killed|no space|ENOMEM|ECONN|ETIMEDOUT" /tmp/build.log | grep -av "npm warn" | tail -n 6 | while IFS= read -r line; do
+              echo "::error title=build error line::$(printf '%s' "$line" | cut -c1-900)"
+            done
+            echo "::error title=docker compose build (last 900 chars)::$(tail -c 900 /tmp/build.log | tr '\n' ' ')"
           fi
           echo "::error title=docker compose ps::$(docker compose ps -a --format '{{.Service}}={{.State}}/{{.Health}}' 2>/dev/null | tr '\n' ' ')"
           for s in postgres backend frontend; do

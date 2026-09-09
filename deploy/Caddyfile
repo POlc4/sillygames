@@ -1,0 +1,30 @@
+# Reverse proxy de production. Certificat Let's Encrypt obtenu et renouvelé automatiquement
+# pour {$DOMAIN} (sous-domaine DuckDNS). /api va au backend, le reste au frontend.
+{$DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		# 'unsafe-inline' pour les scripts : Next.js injecte des scripts inline sans nonce par défaut.
+		# À durcir avec un nonce via middleware (voir runbook, améliorations).
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		-Server
+	}
+
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+
+	handle {
+		reverse_proxy frontend:3000
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

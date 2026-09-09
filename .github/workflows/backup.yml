@@ -1,0 +1,51 @@
+# Sauvegarde hors VM : chaque semaine, déclenche un pg_dump sur la VM et le conserve
+# comme artefact GitHub (90 jours). Se saute proprement tant que la VM n'est pas configurée.
+name: Backup
+
+on:
+  schedule:
+    - cron: "15 4 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Check the VM secrets are configured
+        id: vm
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+        run: echo "present=$([ -n "$VM_HOST" ] && [ -n "$VM_SSH_KEY" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Run the backup on the VM and fetch it
+        if: steps.vm.outputs.present == 'true'
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_USER: ${{ secrets.VM_USER }}
+          VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+        run: |
+          umask 077
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VM_SSH_KEY" > ~/.ssh/id_vm
+          ssh-keyscan -H "$VM_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh -i ~/.ssh/id_vm "$VM_USER@$VM_HOST" '/opt/sillygames/backup.sh'
+          scp -i ~/.ssh/id_vm "$VM_USER@$VM_HOST:/opt/sillygames/backups/latest.sql.gz" "./sillygames-$(date +%Y%m%d).sql.gz"
+          ls -l ./*.sql.gz
+
+      - name: Keep the dump as an artifact
+        if: steps.vm.outputs.present == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: "*.sql.gz"
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Skipped (no VM configured yet)
+        if: steps.vm.outputs.present != 'true'
+        run: echo "VM non configurée, sauvegarde sautée."

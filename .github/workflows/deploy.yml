@@ -1,0 +1,121 @@
+# Déploiement continu : après une CI verte sur main, construit et publie les images sur GHCR,
+# puis met à jour la VM en SSH. Le job de déploiement se saute si les secrets VM ne sont pas posés.
+# Plateforme cible : variable de dépôt DEPLOY_PLATFORM (linux/amd64 par défaut, linux/arm64 pour une VM A1).
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  PLATFORM: ${{ vars.DEPLOY_PLATFORM || 'linux/amd64' }}
+
+jobs:
+  images:
+    name: Build and push images
+    if: github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    strategy:
+      matrix:
+        service: [backend, frontend]
+    steps:
+      - name: Checkout the tested commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Compute the image tag
+        id: tag
+        run: echo "tag=sha-$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU (cross-build for arm64)
+        if: env.PLATFORM != 'linux/amd64'
+        uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+
+      - name: Login to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/sillygames-${{ matrix.service }}
+          tags: |
+            type=raw,value=${{ steps.tag.outputs.tag }}
+            type=raw,value=latest,enable=${{ github.event_name == 'workflow_run' }}
+            type=ref,event=tag
+
+      - name: Build and push
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: ${{ matrix.service }}
+          platforms: ${{ env.PLATFORM }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,scope=${{ matrix.service }},mode=max
+
+  deploy:
+    name: Deploy to the VM
+    needs: images
+    if: github.event_name == 'workflow_run'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://${{ vars.DOMAIN }}
+    steps:
+      - name: Check the VM secrets are configured
+        id: vm
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+        run: echo "present=$([ -n "$VM_HOST" ] && [ -n "$VM_SSH_KEY" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Pull the new images and restart
+        if: steps.vm.outputs.present == 'true'
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script_stop: true
+          script: |
+            cd /opt/sillygames
+            sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${{ needs.images.outputs.tag }}|" .env
+            docker compose pull --quiet
+            docker compose up -d --remove-orphans --wait
+            docker image prune -f >/dev/null
+            docker compose ps
+
+      - name: Smoke test the public site
+        if: steps.vm.outputs.present == 'true' && vars.DOMAIN != ''
+        run: |
+          curl -fsS --retry 5 --retry-delay 5 "https://${{ vars.DOMAIN }}/api/health"
+          curl -fsS -o /dev/null "https://${{ vars.DOMAIN }}/"
+
+      - name: Skipped (no VM configured yet)
+        if: steps.vm.outputs.present != 'true'
+        run: echo "VM_HOST / VM_SSH_KEY absents : images publiées sur GHCR, déploiement sauté."
