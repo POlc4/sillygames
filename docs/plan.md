@@ -19,6 +19,24 @@ Décisions prises avec l'utilisateur :
 
 ---
 
+## État d'avancement (2026-09-09)
+
+| Étape | État | Notes |
+| --- | --- | --- |
+| 0, 0 bis | fait | Docker Engine WSL2, devcontainer, dépôt public, identité noreply |
+| 1 | fait | moteurs de jeu, IA random et parfaite, 100 tests |
+| 2 | fait | Postgres, Alembic 0001/0002, auth invité/compte, limitation de débit |
+| 3 | fait | parties, coups, stats, classement |
+| 4 | fait | Next.js, pages 2D, scènes 3D, 36 tests vitest |
+| 5 | fait | Dockerfiles, compose complet, 4 scénarios Playwright |
+| 6, 6 bis | fait | security.yml, Dependabot, release-please, commitlint, workflows Claude, gouvernance |
+| 7, 8 | code prêt | deploy/, deploy.yml, backup.yml, runbook. **Bloqué par la VM** : inscription Oracle à retenter, sinon repli Render + Neon |
+| 9 | à faire | vérification en prod une fois la VM en place |
+| 2 bis (OAuth) | à faire | après la mise en ligne, pour avoir les URLs de retour |
+| Phase 2, 3, 4 | à faire | |
+
+Réglages GitHub encore à faire par l'utilisateur : voir `docs/runbook.md` (approbation des workflows externes, secret scanning, ruleset, « Allow GitHub Actions to create PRs », secret `CLAUDE_CODE_OAUTH_TOKEN`).
+
 ## Architecture cible
 
 ```
