@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/POlc4/sillygames/compare/v0.2.0...v0.2.1) (2026-09-15)
+
+
+### CI/CD
+
+* **deps:** Bump the actions group with 2 updates ([#11](https://github.com/POlc4/sillygames/issues/11)) ([6d43362](https://github.com/POlc4/sillygames/commit/6d43362c263e71c6421c9638843877e5f463b4a0))
+
 ## [0.2.0](https://github.com/POlc4/sillygames/compare/v0.1.0...v0.2.0) (2026-09-09)
 
 
