@@ -1,5 +1,8 @@
 [project]
 name = "sillygames-backend"
+# Version volontairement figée : uv.lock la reflète et `uv sync --locked` échoue si elle change
+# sans relock. La version du projet vit dans version.txt (release-please) et arrive dans
+# l'API via APP_VERSION. Ne pas la modifier ici sans lancer `uv lock`.
 version = "0.1.0"
 description = "API et moteurs de jeu de SillyGames"
 requires-python = ">=3.12"
