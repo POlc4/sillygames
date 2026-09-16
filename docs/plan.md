@@ -228,7 +228,7 @@ Tout est gratuit sur un dépôt public. Jobs parallèles, la PR est bloquée si 
 - En prod : en-têtes de sécurité dans Caddy (HSTS, CSP de base, `X-Frame-Options`), rate-limiting sur `/api/auth/*` (`slowapi`), CORS restreint au domaine.
 
 **Livraison**
-- **release-please** : à chaque merge sur `main`, ouvre/maintient une PR de release qui génère `CHANGELOG.md` et le tag `vX.Y.Z` à partir des commits conventionnels. Les images GHCR sont taguées `sha`, `latest` et `vX.Y.Z`.
+- **release-please** : à chaque merge sur `main`, ouvre/maintient une PR de release qui génère `CHANGELOG.md`, `version.txt` et le tag `vX.Y.Z` à partir des commits conventionnels. Les images GHCR sont taguées `sha` et `latest` à chaque déploiement, plus `vX.Y.Z` quand le commit déployé est celui de la release (le tag git lui-même ne déclenche rien : créé avec `GITHUB_TOKEN`, il n'émet pas d'événement).
 
 ### Étape 6 bis — Gouvernance du dépôt et intégration de Claude
 Objectif : que les règles du projet soient écrites une fois, lues par les humains **et** par Claude, et appliquées automatiquement.

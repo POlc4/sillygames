@@ -1,6 +1,9 @@
 # Déploiement continu : après une CI verte sur main, construit et publie les images sur GHCR,
 # puis met à jour la VM en SSH. Le job de déploiement se saute si les secrets VM ne sont pas posés.
 # Plateforme cible : variable de dépôt DEPLOY_PLATFORM (linux/amd64 par défaut, linux/arm64 pour une VM A1).
+# Version : un tag créé par release-please avec GITHUB_TOKEN ne déclenche aucun workflow (règle
+# GitHub contre les boucles), donc pas de déclencheur `push: tags`. Le commit de release
+# (« chore(main): release X.Y.Z ») est reconnu ici et les images reçoivent aussi le tag vX.Y.Z.
 name: Deploy
 
 on:
@@ -8,8 +11,6 @@ on:
     workflows: [CI]
     types: [completed]
     branches: [main]
-  push:
-    tags: ["v*"]
 
 permissions:
   contents: read
@@ -26,10 +27,11 @@ env:
 jobs:
   images:
     name: Build and push images
-    if: github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
+      version: ${{ steps.tag.outputs.version }}
     strategy:
       matrix:
         service: [backend, frontend]
@@ -39,9 +41,18 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
-      - name: Compute the image tag
+      - name: Compute the image tags (sha, and vX.Y.Z on a release commit)
         id: tag
-        run: echo "tag=sha-$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
+        run: |
+          version=$(tr -d '[:space:]' < version.txt)
+          echo "tag=sha-$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if git log -1 --format=%s | grep -qE "^chore\(main\): release ${version//./\\.}"; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "Commit de release : les images seront aussi taguées v$version"
+          else
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up QEMU (cross-build for arm64)
         if: env.PLATFORM != 'linux/amd64'
@@ -64,8 +75,8 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/sillygames-${{ matrix.service }}
           tags: |
             type=raw,value=${{ steps.tag.outputs.tag }}
-            type=raw,value=latest,enable=${{ github.event_name == 'workflow_run' }}
-            type=ref,event=tag
+            type=raw,value=latest
+            type=raw,value=v${{ steps.tag.outputs.version }},enable=${{ steps.tag.outputs.release == 'true' }}
 
       - name: Build and push
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
@@ -73,6 +84,8 @@ jobs:
           context: ${{ matrix.service }}
           platforms: ${{ env.PLATFORM }}
           push: true
+          build-args: |
+            APP_VERSION=${{ steps.tag.outputs.version }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.service }}

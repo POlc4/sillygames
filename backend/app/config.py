@@ -12,6 +12,9 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    # Version annoncée par l'API. Injectée dans l'image par deploy.yml (APP_VERSION depuis
+    # version.txt) ; "dev" hors image. La version de pyproject.toml est figée (voir ce fichier).
+    app_version: str = "dev"
     database_url: str = "postgresql+psycopg://sillygames:sillygames@localhost:5432/sillygames"
     jwt_secret: str = "dev-only-change-me-dev-only-change-me-000"
     jwt_ttl_days: int = 30
