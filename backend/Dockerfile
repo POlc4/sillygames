@@ -11,7 +11,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
 COPY . .
 
-FROM mirror.gcr.io/library/python:3.12-slim-bookworm AS runtime
+FROM mirror.gcr.io/library/python:3.14-slim-bookworm AS runtime
 ENV PYTHONUNBUFFERED=1 \
     PATH="/app/.venv/bin:$PATH"
 # UID/GID numériques : résolubles par l'hôte et par les politiques runAsNonRoot (hadolint DL3066).
