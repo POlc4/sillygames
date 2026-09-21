@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.3](https://github.com/POlc4/sillygames/compare/v0.2.2...v0.2.3) (2026-09-21)
+
+
+### Corrections
+
+* **release:** version-tagged images on release commits, single version source ([#18](https://github.com/POlc4/sillygames/issues/18)) ([1cf9ea3](https://github.com/POlc4/sillygames/commit/1cf9ea3939413235c0656bec9dfa5544063a76e3))
+
+
+### CI/CD
+
+* **deps:** keep React below 19.3 and ignore Python minor image bumps ([#17](https://github.com/POlc4/sillygames/issues/17)) ([275db31](https://github.com/POlc4/sillygames/commit/275db3196acab4fb0ee319dfec43df7a05868cbb))
+
 ## [0.2.2](https://github.com/POlc4/sillygames/compare/v0.2.1...v0.2.2) (2026-09-21)
 
 
