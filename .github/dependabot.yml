@@ -50,8 +50,12 @@ updates:
       - dependency-name: "*node*"
         update-types: ["version-update:semver-major"]
       # Python : version fixée par pyproject (3.12).
+      # Python : le runtime (python:3.12-slim) doit rester aligné sur l'image du builder uv
+      # (python3.12) et sur pyproject (3.12) : le .venv construit en 3.12 est inutilisable
+      # sous un autre interpréteur (PR #13 : 3.14 → « No module named alembic »).
+      # Pour Python, une mineure (3.12 → 3.14) est une majeure : on ignore les deux.
       - dependency-name: "*python*"
-        update-types: ["version-update:semver-major"]
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   - package-ecosystem: docker-compose
     directory: /
