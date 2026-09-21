@@ -12,8 +12,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY . .
 
 FROM mirror.gcr.io/library/python:3.12-slim-bookworm AS runtime
+# Version affichée par l'API (/api/openapi.json) : fournie par deploy.yml depuis version.txt.
+ARG APP_VERSION=dev
 ENV PYTHONUNBUFFERED=1 \
-    PATH="/app/.venv/bin:$PATH"
+    PATH="/app/.venv/bin:$PATH" \
+    APP_VERSION=$APP_VERSION
 # UID/GID numériques : résolubles par l'hôte et par les politiques runAsNonRoot (hadolint DL3066).
 RUN groupadd --system --gid 10001 app && useradd --system --uid 10001 --gid 10001 --home /app app
 WORKDIR /app

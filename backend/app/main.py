@@ -19,7 +19,7 @@ settings = get_settings()
 
 app = FastAPI(
     title="SillyGames API",
-    version="0.1.0",
+    version=settings.app_version,
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",
 )

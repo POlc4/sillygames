@@ -74,7 +74,9 @@ Lire l'état de la CI sans se connecter : l'API publique de GitHub (60 requêtes
 
 ## Releases
 
-release-please ouvre et maintient une PR « chore(main): release X.Y.Z » à partir des commits `feat`/`fix`. La merger crée le tag `vX.Y.Z`, la release GitHub et met à jour `CHANGELOG.md`, `version.txt`, `backend/pyproject.toml` et `frontend/package.json`. Ne jamais éditer le CHANGELOG à la main.
+release-please ouvre et maintient une PR « chore(main): release X.Y.Z » à partir des commits `feat`/`fix`. La merger crée le tag `vX.Y.Z`, la release GitHub et met à jour `CHANGELOG.md`, `version.txt` et `.release-please-manifest.json` (la source qu'il relit pour calculer la version suivante). Ne jamais éditer le CHANGELOG à la main.
+
+Les autres champs « version » sont volontairement figés et ne doivent pas être montés à la main : `backend/pyproject.toml` (reflété par `uv.lock`, `uv sync --locked` casse sinon) et `frontend/package.json` (reflété par `package-lock.json`, rien ne le lit). La version qui compte en exploitation est celle de `version.txt` : `deploy.yml` la passe aux images (`APP_VERSION`) et l'API l'annonce dans `/api/openapi.json` (`info.version`).
 
 ## Incidents
 
@@ -101,7 +103,7 @@ release-please ouvre et maintient une PR « chore(main): release X.Y.Z » à par
 
 ## Déploiement continu
 
-`deploy.yml` s'exécute quand `CI` réussit sur `main` : construit les deux images (`ghcr.io/polc4/sillygames-{backend,frontend}` taguées `sha-<commit>` et `latest`), puis en SSH sur la VM : `IMAGE_TAG` mis à jour dans `.env`, `docker compose pull`, `up -d --wait`, `image prune`, puis smoke test HTTPS. Un tag `vX.Y.Z` (release-please) publie aussi les images avec ce tag.
+`deploy.yml` s'exécute quand `CI` réussit sur `main` : construit les deux images (`ghcr.io/polc4/sillygames-{backend,frontend}` taguées `sha-<commit>` et `latest`), puis en SSH sur la VM : `IMAGE_TAG` mis à jour dans `.env`, `docker compose pull`, `up -d --wait`, `image prune`, puis smoke test HTTPS. Quand le commit mergé est celui d'une release (« chore(main): release X.Y.Z »), les images reçoivent aussi le tag `vX.Y.Z`. Il n'y a pas de déclencheur sur le tag git lui-même : créé par release-please avec le `GITHUB_TOKEN`, il ne génère aucun événement de workflow.
 
 Vérification après déploiement : skill `deploy-check`, ou à la main `curl https://<domaine>/api/health` et `docker compose ps` sur la VM.
 

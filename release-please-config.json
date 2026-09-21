@@ -13,10 +13,6 @@
     { "type": "test", "section": "Tests", "hidden": true }
   ],
   "packages": {
-    ".": {
-      "extra-files": [
-        { "type": "json", "path": "frontend/package.json", "jsonpath": "$.version" }
-      ]
-    }
+    ".": {}
   }
 }
